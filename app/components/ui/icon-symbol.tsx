@@ -11,3 +11,5 @@ export function IconSymbol({ size, name, color }: IconSymbolProps) {
   // Renderiza o ícone real usando Ionicons
   return <Ionicons name={name as any} size={size} color={color} />;
 }
+
+export default IconSymbol;

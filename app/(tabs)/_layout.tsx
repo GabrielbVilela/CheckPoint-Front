@@ -1,44 +1,39 @@
-import { Tabs } from "expo-router";
-import React from "react";
+import { Stack, Redirect, SplashScreen, useSegments } from "expo-router";
+import React, { useEffect } from "react";
+import { useAuthStore } from "@/store/authStore"; 
 
-import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+function AuthGuard() {
+    const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+    const segments = useSegments();
+    const inAuthGroup = segments[segments.length - 1] === 'login'; 
+    const token = useAuthStore(state => state.token);
 
-  // Garante uma cor padrão caso Colors[colorScheme] não exista
-  const tabBarActiveTintColor =
-    Colors[colorScheme as keyof typeof Colors] || Colors.primary;
+    useEffect(() => {
+        if (token !== undefined) {
+             SplashScreen.hideAsync();
+        }
+    }, [token]);
 
+    if (!isAuthenticated && !inAuthGroup) {
+        return <Redirect href="/(tabs)/login" />; 
+    }
+    if (isAuthenticated && inAuthGroup) {
+        return <Redirect href="/(tabs)" />; 
+    }
+    return null; 
+}
+
+export default function RootLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: "Explore",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+    <>
+      <AuthGuard />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="cadastroaluno" options={{ headerShown: false }} />
+      </Stack>
+    </>
   );
 }

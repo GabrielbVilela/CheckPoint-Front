@@ -6,3 +6,5 @@ export const Colors = {
   background: "#F2F2F7",
   text: "#1C1C1E",
 };
+
+export default Colors;

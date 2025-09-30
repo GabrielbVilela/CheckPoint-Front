@@ -40,3 +40,5 @@ export function HapticTab({
     </TouchableOpacity>
   );
 }
+
+export default HapticTab; 
