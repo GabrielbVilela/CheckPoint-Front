@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  StyleSheet,
 } from "react-native";
 import axios from "axios";
 import { router } from "expo-router";
@@ -15,6 +16,8 @@ export default function LoginScreen() {
   const [matricula, setMatricula] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
+  const [senhaIncorreta, setSenhaIncorreta] = useState(false);
+  const [matriculaErro, setMatriculaErro] = useState(false);
   const setAuth = useAuthStore((state: any) => state.setAuth);
 
   const handleLogin = async () => {
@@ -51,55 +54,97 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
-      <Text style={{ fontSize: 28, fontWeight: "bold", marginBottom: 20 }}>Login</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Olá, Bem-vindo.</Text>
 
+      <View style={styles.inputContainer}>
+      <Text style={styles.label}>Matrícula</Text>
       <TextInput
-        placeholder="Matrícula"
+        placeholder="Digite sua Matrícula"
+        placeholderTextColor="rgba(0,0,0,0.4)"
         value={matricula}
         onChangeText={setMatricula}
-        style={{
-          width: "100%",
-          borderWidth: 1,
-          borderColor: "#ccc",
-          borderRadius: 8,
-          padding: 12,
-          marginBottom: 15,
-        }}
+        style={[styles.input, matriculaErro && { borderColor: "red" }]}
       />
+      </View>
 
+      <View style={styles.inputContainer}>
+      <Text style={styles.label}>Senha</Text>
       <TextInput
-        placeholder="Senha"
+        placeholder="Digite sua senha"
+        placeholderTextColor="rgba(0,0,0,0.4)"
         value={senha}
         onChangeText={setSenha}
         secureTextEntry
-        style={{
-          width: "100%",
-          borderWidth: 1,
-          borderColor: "#ccc",
-          borderRadius: 8,
-          padding: 12,
-          marginBottom: 15,
-        }}
+        style={[styles.input, senhaIncorreta && { borderColor: "red" }]}
       />
+      </View>
 
       <TouchableOpacity
         onPress={handleLogin}
-        style={{
-          backgroundColor: "#007BFF",
-          padding: 15,
-          borderRadius: 8,
-          width: "100%",
-          alignItems: "center",
-        }}
+        style={[styles.button, loading && { opacity: 0.6 }]}
         disabled={loading}
       >
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>Entrar</Text>
+          <Text style={styles.buttonText}>Entrar</Text>
         )}
       </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#f9f9f9",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 30,
+    textAlign: "center",
+  },
+  label: {
+    position: "absolute",
+    top: -10,
+    left: 10,
+    backgroundColor: "#f9f9f9",
+    paddingHorizontal: 4,
+    fontSize: 12,
+    color: "#555",
+    zIndex: 1,
+  },
+  input: {
+    width: "100%",
+    height: 50,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    backgroundColor: "#fff",
+  },
+  button: {
+    width: "100%",
+    height: 50,
+    backgroundColor: "#42a148ff",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+    inputContainer: {
+    width: "100%",
+    marginBottom: 20,
+    position: "relative",
+  },
+});
