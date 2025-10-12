@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
+  View,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
 } from "react-native";
-import { useRouter } from "expo-router";
-import api from "../services/api";
-import { useAuthStore, UserRole } from "../store/authStore";
+import axios from "axios";
+import { router } from "expo-router";
+import { useAuthStore } from "../store/authStore";
 
 export default function LoginScreen() {
   const [matricula, setMatricula] = useState("");
@@ -18,50 +18,38 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [senhaIncorreta, setSenhaIncorreta] = useState(false);
   const [matriculaErro, setMatriculaErro] = useState(false);
-
-  const router = useRouter();
-  const login = useAuthStore((state) => state.login);
+  const setAuth = useAuthStore((state: any) => state.setAuth);
 
   const handleLogin = async () => {
     if (!matricula || !senha) {
-      Alert.alert("Erro", "Preencha todos os campos!");
-      return;
-    }
-
-    if (matriculaErro) {
-      Alert.alert("Erro", "Corrija os erros antes de continuar.");
+      Alert.alert("Erro", "Preencha todos os campos");
       return;
     }
 
     setLoading(true);
-    setSenhaIncorreta(false);
-
     try {
-      const response = await api.post("/login", { matricula, senha });
-      const { token, tipo_acesso: userRole } = response.data;
+      const response = await axios.post(
+        "https://backend-expo-681689392736.us-central1.run.app/login",
+        new URLSearchParams({
+          username: matricula,
+          password: senha,
+        }),
+        { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+      );
 
-      if (token && userRole) {
-        login(token, userRole as UserRole);
-        if (userRole === "aluno") {
-          router.replace("/(tabs)");
-        }
-      } else {
-        Alert.alert("Erro", "Resposta da API incompleta. Token ou perfil ausente.");
-      }
+      const token = response.data.access_token;
+      const role = "aluno"; // Ajuste conforme backend
+      await setAuth(token, role);
+
+      router.push("/(tabs)/");
     } catch (error: any) {
-      setSenhaIncorreta(true);
-      console.log("Erro no login:", error.response?.data || error);
+      console.log("❌ Erro ao fazer login:", error.response?.data || error.message);
+      Alert.alert(
+        "Erro ao logar",
+        error.response?.data?.detail || "Não foi possível conectar ao servidor."
+      );
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleMatriculaChange = (text: string) => {
-    if (/^[0-9]*$/.test(text)) {
-      setMatricula(text);
-      setMatriculaErro(false);
-    } else {
-      setMatriculaErro(true);
     }
   };
 
@@ -70,43 +58,31 @@ export default function LoginScreen() {
       <Text style={styles.title}>Olá, Bem-vindo.</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Matrícula</Text>
-        <TextInput
-          style={[styles.input, matriculaErro && styles.inputError]}
-          placeholder="Digite sua Matrícula"
-          placeholderTextColor="rgba(0,0,0,0.4)"
-          value={matricula}
-          onChangeText={handleMatriculaChange}
-          keyboardType="numeric"
-          editable={!loading}
-        />
-        {matriculaErro && (
-          <Text style={styles.errorText}>Apenas números são permitidos</Text>
-        )}
+      <Text style={styles.label}>Matrícula</Text>
+      <TextInput
+        placeholder="Digite sua Matrícula"
+        placeholderTextColor="rgba(0,0,0,0.4)"
+        value={matricula}
+        onChangeText={setMatricula}
+        style={[styles.input, matriculaErro && { borderColor: "red" }]}
+      />
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Senha</Text>
-        <TextInput
-          style={[styles.input, senhaIncorreta && styles.inputError]}
-          placeholder="Digite sua senha"
-          placeholderTextColor="rgba(0,0,0,0.4)"
-          value={senha}
-          onChangeText={(text) => {
-            setSenha(text);
-            if (senhaIncorreta) setSenhaIncorreta(false);
-          }}
-          secureTextEntry
-          editable={!loading}
-        />
-        {senhaIncorreta && (
-          <Text style={styles.errorText}>Senha incorreta</Text>
-        )}
+      <Text style={styles.label}>Senha</Text>
+      <TextInput
+        placeholder="Digite sua senha"
+        placeholderTextColor="rgba(0,0,0,0.4)"
+        value={senha}
+        onChangeText={setSenha}
+        secureTextEntry
+        style={[styles.input, senhaIncorreta && { borderColor: "red" }]}
+      />
       </View>
 
       <TouchableOpacity
-        style={styles.button}
         onPress={handleLogin}
+        style={[styles.button, loading && { opacity: 0.6 }]}
         disabled={loading}
       >
         {loading ? (
@@ -123,6 +99,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
+    alignItems: "center",
     padding: 20,
     backgroundColor: "#f9f9f9",
   },
@@ -131,11 +108,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 30,
     textAlign: "center",
-  },
-  inputContainer: {
-    width: "100%",
-    marginBottom: 20,
-    position: "relative",
   },
   label: {
     position: "absolute",
@@ -156,19 +128,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: "#fff",
   },
-  inputError: {
-    borderColor: "red",
-  },
-  errorText: {
-    color: "red",
-    marginTop: 5,
-    marginLeft: 4,
-    fontSize: 14,
-  },
   button: {
     width: "100%",
     height: 50,
-    backgroundColor: "rgba(66, 161, 72, 1)",
+    backgroundColor: "#42a148ff",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
@@ -178,5 +141,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
+  },
+    inputContainer: {
+    width: "100%",
+    marginBottom: 20,
+    position: "relative",
   },
 });

@@ -1,34 +1,35 @@
-import { create } from 'zustand';
-
-// Tipos de usuário com base no contexto do projeto
-export type UserRole = 'aluno' | 'professor' | 'coordenador' | 'admin' | null;
+import { create } from "zustand";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface AuthState {
   token: string | null;
-  userRole: UserRole;
+  userRole: string | null;
   isAuthenticated: boolean;
-  // O tipo de login é ajustado para armazenar o perfil
-  login: (token: string, userRole: UserRole) => void;
-  logout: () => void;
+  setAuth: (token: string, role: string) => Promise<void>;
+  logout: () => Promise<void>;
+  loadAuth: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   userRole: null,
   isAuthenticated: false,
-  
-  // A função de login armazena o token e o perfil (role)
-  login: (token, userRole) => set({ 
-    token, 
-    userRole, 
-    isAuthenticated: true 
-  }),
-  
-  logout: () => set({ 
-    token: null, 
-    userRole: null, 
-    isAuthenticated: false 
-  }),
-}));
 
-export default useAuthStore; 
+  setAuth: async (token, role) => {
+    await AsyncStorage.setItem("token", token);
+    await AsyncStorage.setItem("role", role);
+    set({ token, userRole: role, isAuthenticated: true });
+  },
+
+  logout: async () => {
+    await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("role");
+    set({ token: null, userRole: null, isAuthenticated: false });
+  },
+
+  loadAuth: async () => {
+    const token = await AsyncStorage.getItem("token");
+    const role = await AsyncStorage.getItem("role");
+    set({ token, userRole: role, isAuthenticated: !!token });
+  },
+}));
