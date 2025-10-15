@@ -11,6 +11,13 @@ import {
 import axios from "axios";
 import { router } from "expo-router";
 import { useAuthStore } from "../store/authStore";
+import { jwtDecode } from "jwt-decode";
+
+interface TokenPayload {
+  sub: string;
+  scope?: string;
+  exp?: number;
+}
 
 export default function LoginScreen() {
   const [matricula, setMatricula] = useState("");
@@ -38,10 +45,29 @@ export default function LoginScreen() {
       );
 
       const token = response.data.access_token;
-      const role = "aluno"; // Ajuste conforme backend
+
+      // 🧩 Decodifica o token e obtém o papel
+      const decoded: TokenPayload = jwtDecode(token);
+      console.log("📜 Token decodificado:", decoded);
+
+      const role = decoded.scope
+        ? decoded.scope.trim().toLowerCase()
+        : "aluno";
+
+      console.log("👤 Papel detectado:", role);
+
+      // 🔒 Salva o token e role no estado global
       await setAuth(token, role);
 
-      router.push("/(tabs)/");
+      // ⏳ Delay leve pra evitar conflito com possíveis redirecionamentos automáticos
+      setTimeout(() => {
+        if (role === "aluno") {
+          router.push("/(tabs)/");
+        } else {
+          router.push("/cadastroaluno");
+        }
+      }, 200);
+
     } catch (error: any) {
       console.log("❌ Erro ao fazer login:", error.response?.data || error.message);
       Alert.alert(
@@ -58,26 +84,26 @@ export default function LoginScreen() {
       <Text style={styles.title}>Olá, Bem-vindo.</Text>
 
       <View style={styles.inputContainer}>
-      <Text style={styles.label}>Matrícula</Text>
-      <TextInput
-        placeholder="Digite sua Matrícula"
-        placeholderTextColor="rgba(0,0,0,0.4)"
-        value={matricula}
-        onChangeText={setMatricula}
-        style={[styles.input, matriculaErro && { borderColor: "red" }]}
-      />
+        <Text style={styles.label}>Matrícula</Text>
+        <TextInput
+          placeholder="Digite sua Matrícula"
+          placeholderTextColor="rgba(0,0,0,0.4)"
+          value={matricula}
+          onChangeText={setMatricula}
+          style={styles.input}
+        />
       </View>
 
       <View style={styles.inputContainer}>
-      <Text style={styles.label}>Senha</Text>
-      <TextInput
-        placeholder="Digite sua senha"
-        placeholderTextColor="rgba(0,0,0,0.4)"
-        value={senha}
-        onChangeText={setSenha}
-        secureTextEntry
-        style={[styles.input, senhaIncorreta && { borderColor: "red" }]}
-      />
+        <Text style={styles.label}>Senha</Text>
+        <TextInput
+          placeholder="Digite sua senha"
+          placeholderTextColor="rgba(0,0,0,0.4)"
+          value={senha}
+          onChangeText={setSenha}
+          secureTextEntry
+          style={styles.input}
+        />
       </View>
 
       <TouchableOpacity
@@ -142,7 +168,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-    inputContainer: {
+  inputContainer: {
     width: "100%",
     marginBottom: 20,
     position: "relative",
