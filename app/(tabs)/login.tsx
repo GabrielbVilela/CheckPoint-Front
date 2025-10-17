@@ -1,17 +1,18 @@
+import axios from "axios";
+import { router } from "expo-router";
+import { jwtDecode } from "jwt-decode";
 import React, { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  StyleSheet,
+  View,
 } from "react-native";
-import axios from "axios";
-import { router } from "expo-router";
 import { useAuthStore } from "../store/authStore";
-import { jwtDecode } from "jwt-decode";
 
 interface TokenPayload {
   sub: string;
@@ -25,11 +26,25 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [senhaIncorreta, setSenhaIncorreta] = useState(false);
   const [matriculaErro, setMatriculaErro] = useState(false);
+  const [matriculaErroMsg, setMatriculaErroMsg] = useState("");
+  const [senhaErroMsg, setSenhaErroMsg] = useState("");
   const setAuth = useAuthStore((state: any) => state.setAuth);
 
   const handleLogin = async () => {
+    setMatriculaErro(false);
+    setSenhaIncorreta(false);
+    setMatriculaErroMsg("");
+    setSenhaErroMsg("");
+
     if (!matricula || !senha) {
-      Alert.alert("Erro", "Preencha todos os campos");
+      if (!matricula) {
+        setMatriculaErro(true);
+        setMatriculaErroMsg("Informe sua matrícula");
+      }
+      if (!senha) {
+        setSenhaIncorreta(true);
+        setSenhaErroMsg("Informe sua senha");
+      }
       return;
     }
 
@@ -46,7 +61,6 @@ export default function LoginScreen() {
 
       const token = response.data.access_token;
 
-      // 🧩 Decodifica o token e obtém o papel
       const decoded: TokenPayload = jwtDecode(token);
       console.log("📜 Token decodificado:", decoded);
 
@@ -56,24 +70,30 @@ export default function LoginScreen() {
 
       console.log("👤 Papel detectado:", role);
 
-      // 🔒 Salva o token e role no estado global
       await setAuth(token, role);
 
-      // ⏳ Delay leve pra evitar conflito com possíveis redirecionamentos automáticos
       setTimeout(() => {
         if (role === "aluno") {
-          router.push("/(tabs)/");
+          router.push("/(tabs)");
         } else {
-          router.push("/cadastroaluno");
+          router.push("/(tabs)/cadastroaluno");
         }
       }, 200);
 
     } catch (error: any) {
       console.log("❌ Erro ao fazer login:", error.response?.data || error.message);
-      Alert.alert(
-        "Erro ao logar",
-        error.response?.data?.detail || "Não foi possível conectar ao servidor."
-      );
+      const status = error.response?.status;
+      const detail = error.response?.data?.detail || "Não foi possível conectar ao servidor.";
+
+      if (status === 401) {
+        setSenhaIncorreta(true);
+        setSenhaErroMsg("Matrícula ou senha incorreta");
+      } else if (status === 404) {
+        setMatriculaErro(true);
+        setMatriculaErroMsg("Usuário não encontrado");
+      } else {
+        Alert.alert("Erro ao logar", detail);
+      }
     } finally {
       setLoading(false);
     }
@@ -81,7 +101,12 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Olá, Bem-vindo.</Text>
+      <Image
+        source={require("../../assets/images/logo/logoblack.png")}
+        style={styles.logo}
+      />
+
+      <Text style={styles.title}>Vamos marcar esse momento?</Text>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Matrícula</Text>
@@ -89,9 +114,19 @@ export default function LoginScreen() {
           placeholder="Digite sua Matrícula"
           placeholderTextColor="rgba(0,0,0,0.4)"
           value={matricula}
-          onChangeText={setMatricula}
-          style={styles.input}
+          onChangeText={(text) => {
+            setMatricula(text.replace(/[^0-9]/g, ""));
+            if (matriculaErro) {
+              setMatriculaErro(false);
+              setMatriculaErroMsg("");
+            }
+          }}
+          keyboardType="numeric"
+          style={[styles.input, matriculaErro && styles.inputError]}
         />
+        {matriculaErroMsg ? (
+          <Text style={styles.errorText}>{matriculaErroMsg}</Text>
+        ) : null}
       </View>
 
       <View style={styles.inputContainer}>
@@ -100,10 +135,17 @@ export default function LoginScreen() {
           placeholder="Digite sua senha"
           placeholderTextColor="rgba(0,0,0,0.4)"
           value={senha}
-          onChangeText={setSenha}
+          onChangeText={(text) => {
+            setSenha(text);
+            if (senhaIncorreta) {
+              setSenhaIncorreta(false);
+              setSenhaErroMsg("");
+            }
+          }}
           secureTextEntry
-          style={styles.input}
+          style={[styles.input, senhaIncorreta && styles.inputError]}
         />
+        {senhaErroMsg ? <Text style={styles.errorText}>{senhaErroMsg}</Text> : null}
       </View>
 
       <TouchableOpacity
@@ -117,6 +159,8 @@ export default function LoginScreen() {
           <Text style={styles.buttonText}>Entrar</Text>
         )}
       </TouchableOpacity>
+
+      <Text style={styles.copyright}>© NassauCode</Text>
     </View>
   );
 }
@@ -124,9 +168,10 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
     padding: 20,
+    paddingTop: 40,
     backgroundColor: "#f9f9f9",
   },
   title: {
@@ -134,6 +179,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 30,
     textAlign: "center",
+  },
+  logo: {
+    width: 720,
+    height: 216,
+    resizeMode: "contain",
+    marginBottom: 8,
   },
   label: {
     position: "absolute",
@@ -154,6 +205,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: "#fff",
   },
+  inputError: {
+    borderColor: "#e53935",
+  },
+  errorText: {
+    color: "#e53935",
+    marginTop: 6,
+    fontSize: 12,
+  },
   button: {
     width: "100%",
     height: 50,
@@ -172,5 +231,12 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: 20,
     position: "relative",
+  },
+  copyright: {
+    marginTop: 18,
+    color: "#000",
+    opacity: 0.35,
+    textAlign: "center",
+    width: "100%",
   },
 });
