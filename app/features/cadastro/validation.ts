@@ -193,3 +193,5 @@ export const validateAllSteps = (form: CadastroAlunoForm) => {
   });
   return errors;
 };
+
+export default validateStep;

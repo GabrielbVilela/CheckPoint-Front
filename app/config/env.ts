@@ -28,3 +28,5 @@ export const endpoints = {
   registro: `${env.apiUrl}/registro`,
   alunos: `${env.apiUrl}/alunos`,
 } as const;
+
+export default env;

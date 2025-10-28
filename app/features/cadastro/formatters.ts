@@ -51,3 +51,4 @@ export const formatCep = (value: string) => {
   if (digits.length <= 5) return digits;
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 };
+

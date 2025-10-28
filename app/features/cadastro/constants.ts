@@ -12,3 +12,5 @@ export const PERIODOS: PeriodoOption[] = Array.from({ length: 10 }, (_, index) =
     value,
   };
 });
+
+export default PERIODOS;

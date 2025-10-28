@@ -43,3 +43,5 @@ export type PeriodoOption = {
  * Campos de data permitidos no formulário (usado pelo DatePicker)
  */
 export type CadastroDateField = "dataInicio" | "dataFim";
+
+export default CadastroAlunoForm;

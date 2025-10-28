@@ -26,6 +26,11 @@ interface TokenPayload {
   preferred_username?: string;
 }
 
+const ROUTES_BY_ROLE: Record<string, string> = {
+  aluno: "/(tabs)",
+  coordenador: "/(tabs)/cadastroaluno",
+};
+
 const LoginScreen = () => {
   const [matricula, setMatricula] = useState("");
   const [senha, setSenha] = useState("");
@@ -94,11 +99,8 @@ const LoginScreen = () => {
       });
 
       setTimeout(() => {
-        if (role === "aluno") {
-          router.push("/(tabs)");
-        } else {
-          router.push("/(tabs)/cadastroaluno");
-        }
+        const targetRoute = ROUTES_BY_ROLE[role] ?? "/(tabs)";
+        router.replace(targetRoute);
       }, 200);
     } catch (error: any) {
       console.error("Erro ao fazer login:", error.response?.data ?? error);
@@ -182,7 +184,7 @@ const LoginScreen = () => {
         )}
       </TouchableOpacity>
 
-      <Text style={styles.footer}>Â(c) NassauCode</Text>
+      <Text style={styles.footer}>Ã‚(c) NassauCode</Text>
     </View>
   );
 };

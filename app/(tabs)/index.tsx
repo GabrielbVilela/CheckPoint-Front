@@ -1,150 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useInactivityTimeout } from "@/hooks/useInactivityTimeout";
+import { usePointRegistration } from "@/hooks/usePointRegistration";
+import { useAuthStore } from "@/store/authStore";
+import { useRouter } from "expo-router";
+import "expo-router/entry";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
-import "expo-router/entry";
-import { usePointRegistration } from "@/hooks/usePointRegistration";
-import { useAuthStore } from "@/store/authStore";
-
-const formatTimestamp = (isoString: string) => {
-  const date = new Date(isoString);
-  const time = date.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-  const fullDate = date.toLocaleDateString("pt-BR");
-  return { time, fullDate };
-};
-
-const PointScreenAuthenticated = () => {
-  const user = useAuthStore((state) => state.user);
-  const userRole = useAuthStore((state) => state.userRole);
-
-  const {
-    pointData,
-    loading: isProcessing,
-    error: pointError,
-    capturePoint,
-    confirmPointRegistration,
-    cancelConfirmation,
-  } = usePointRegistration();
-
-  const [localTime, setLocalTime] = useState(new Date().toISOString());
-  const isAluno = userRole === "aluno";
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLocalTime(new Date().toISOString());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const displayTimestamp = useMemo(
-    () => (pointData ? pointData.timestamp : localTime),
-    [pointData, localTime]
-  );
-
-  const { time, fullDate } = formatTimestamp(displayTimestamp);
-
-  if (!isAluno) {
-    return (
-      <View style={[styles.container, { justifyContent: "center" }]}>
-        <Text style={styles.mainTitle}>ACESSO RESTRITO</Text>
-        <Text style={styles.errorText}>
-          Seu perfil ({userRole?.toUpperCase()}) nao tem acesso a esta tela.
-        </Text>
-      </View>
-    );
-  }
-
-  if (pointData) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.mainTitle}>PONTO ELETRONICO</Text>
-
-        <View style={styles.pointCard}>
-          <View style={styles.userInfoBox}>
-            <Text style={styles.collaboratorTitle}>Colaborador</Text>
-            <Text style={styles.userInfoText}>
-              ALUNO: {user?.name ?? "Usuario autenticado"}
-            </Text>
-            <Text style={styles.userInfoText}>
-              MATRICULA: {user?.matricula ?? user?.id ?? "-"}
-            </Text>
-          </View>
-
-          <Text style={styles.timeText}>{time}</Text>
-          <Text style={styles.dateText}>{fullDate}</Text>
-
-          <Text style={styles.confirmationText}>Confirmar o registro?</Text>
-
-          <View style={styles.buttonGroup}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.cancelButton]}
-              onPress={cancelConfirmation}
-              disabled={isProcessing}
-            >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionButton, styles.registerButton]}
-              onPress={confirmPointRegistration}
-              disabled={isProcessing}
-            >
-              {isProcessing ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.registerButtonText}>Registrar</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-        {pointError && <Text style={styles.errorText}>{pointError}</Text>}
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.mainTitle}>PONTO ELETRONICO</Text>
-
-      <View style={styles.pointCard}>
-        <Text style={styles.timeText}>{time}</Text>
-        <Text style={styles.dateText}>{fullDate}</Text>
-
-        {isProcessing ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <TouchableOpacity
-            style={styles.mainButton}
-            onPress={capturePoint}
-            disabled={!!pointError}
-          >
-            <Text style={styles.mainButtonText}>BATER PONTO!</Text>
-          </TouchableOpacity>
-        )}
-
-        {pointError && <Text style={styles.errorText}>{pointError}</Text>}
-      </View>
-    </View>
-  );
-};
-
-const PointScreen = () => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  return <PointScreenAuthenticated />;
-};
 
 const styles = StyleSheet.create({
   container: {
@@ -258,5 +125,183 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PointScreen;
+const formatTimestamp = (isoString: string) => {
+  const date = new Date(isoString);
+  const time = date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const fullDate = date.toLocaleDateString("pt-BR");
+  return { time, fullDate };
+};
 
+const PointScreenAuthenticated = () => {
+  const user = useAuthStore((state) => state.user);
+  const userRole = useAuthStore((state) => state.userRole);
+
+  const {
+    pointData,
+    loading: isProcessing,
+    error: pointError,
+    capturePoint,
+    confirmPointRegistration,
+    cancelConfirmation,
+  } = usePointRegistration();
+
+  const [localTime, setLocalTime] = useState(new Date().toISOString());
+  const isAluno = userRole === "aluno";
+  const { resetTimer } = useInactivityTimeout();
+
+  const handleCapturePoint = useCallback(() => {
+    resetTimer();
+    capturePoint();
+  }, [resetTimer, capturePoint]);
+
+  const handleConfirmPointRegistration = useCallback(() => {
+    resetTimer();
+    confirmPointRegistration();
+  }, [resetTimer, confirmPointRegistration]);
+
+  const handleCancelConfirmation = useCallback(() => {
+    resetTimer();
+    cancelConfirmation();
+  }, [resetTimer, cancelConfirmation]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLocalTime(new Date().toISOString());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const displayTimestamp = useMemo(
+    () => (pointData ? pointData.timestamp : localTime),
+    [pointData, localTime]
+  );
+
+  const { time, fullDate } = formatTimestamp(displayTimestamp);
+
+  if (!isAluno) {
+    return (
+      <TouchableWithoutFeedback onPress={resetTimer}>
+        <View style={[styles.container, { justifyContent: "center" }]}>
+          <Text style={styles.mainTitle}>ACESSO RESTRITO</Text>
+          <Text style={styles.errorText}>
+            Seu perfil ({userRole?.toUpperCase()}) nao tem acesso a esta tela.
+          </Text>
+        </View>
+      </TouchableWithoutFeedback>
+    );
+  }
+
+  if (pointData) {
+    return (
+      <TouchableWithoutFeedback onPress={resetTimer}>
+        <View style={styles.container}>
+          <Text style={styles.mainTitle}>PONTO ELETRONICO</Text>
+
+          <View style={styles.pointCard}>
+            <View style={styles.userInfoBox}>
+              <Text style={styles.collaboratorTitle}>Colaborador</Text>
+            <Text style={styles.userInfoText}>
+              ALUNO: {user?.name ?? "Usuario autenticado"}
+            </Text>
+            <Text style={styles.userInfoText}>
+              MATRICULA: {user?.matricula ?? user?.id ?? "-"}
+            </Text>
+          </View>
+
+          <Text style={styles.timeText}>{time}</Text>
+          <Text style={styles.dateText}>{fullDate}</Text>
+
+          <Text style={styles.confirmationText}>Confirmar o registro?</Text>
+
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.cancelButton]}
+              onPress={handleCancelConfirmation}
+              disabled={isProcessing}
+            >
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.registerButton]}
+              onPress={handleConfirmPointRegistration}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.registerButtonText}>Registrar</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+        {pointError && <Text style={styles.errorText}>{pointError}</Text>}
+      </View>
+    </TouchableWithoutFeedback>
+    );
+  }
+
+  return (
+    <TouchableWithoutFeedback onPress={resetTimer}>
+      <View style={styles.container}>
+        <Text style={styles.mainTitle}>PONTO ELETRONICO</Text>
+
+        <View style={styles.pointCard}>
+          <Text style={styles.timeText}>{time}</Text>
+          <Text style={styles.dateText}>{fullDate}</Text>
+
+          {isProcessing ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <TouchableOpacity
+              style={styles.mainButton}
+              onPress={handleCapturePoint}
+              disabled={!!pointError}
+            >
+              <Text style={styles.mainButtonText}>BATER PONTO!</Text>
+            </TouchableOpacity>
+          )}
+
+          {pointError && <Text style={styles.errorText}>{pointError}</Text>}
+        </View>
+      </View>
+    </TouchableWithoutFeedback>
+  );
+};
+
+const PointScreen = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const userRole = useAuthStore((state) => state.userRole);
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        if (!isAuthenticated) {
+          await router.replace("/(tabs)/login");
+          return;
+        }
+        
+        if (userRole !== "aluno") {
+          await router.replace("/(tabs)/cadastroaluno");
+        }
+      } catch (error) {
+        console.error("Erro ao redirecionar:", error);
+      }
+    };
+
+    checkAuth();
+  }, [isAuthenticated, userRole, router]);
+
+  if (!isAuthenticated || userRole !== "aluno") {
+    return null;
+  }
+
+  return <PointScreenAuthenticated />;
+};
+
+export default PointScreen;
