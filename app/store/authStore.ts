@@ -1,11 +1,18 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+export type AuthUser = {
+  id: string | null;
+  matricula?: string | null;
+  name?: string | null;
+};
+
 interface AuthState {
   token: string | null;
   userRole: string | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
-  setAuth: (token: string, role: string) => Promise<void>;
+  setAuth: (payload: { token: string; role: string; user: AuthUser }) => Promise<void>;
   logout: () => Promise<void>;
   loadAuth: () => Promise<void>;
 }
@@ -13,23 +20,28 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   userRole: null,
+  user: null,
   isAuthenticated: false,
 
-  setAuth: async (token, role) => {
-    await AsyncStorage.setItem("token", token);
-    await AsyncStorage.setItem("role", role);
-    set({ token, userRole: role, isAuthenticated: true });
+  setAuth: async ({ token, role, user }) => {
+    await AsyncStorage.multiSet([
+      ["token", token],
+      ["role", role],
+      ["user", JSON.stringify(user)],
+    ]);
+    set({ token, userRole: role, user, isAuthenticated: true });
   },
 
   logout: async () => {
-    await AsyncStorage.removeItem("token");
-    await AsyncStorage.removeItem("role");
-    set({ token: null, userRole: null, isAuthenticated: false });
+    await AsyncStorage.multiRemove(["token", "role", "user"]);
+    set({ token: null, userRole: null, user: null, isAuthenticated: false });
   },
 
   loadAuth: async () => {
     const token = await AsyncStorage.getItem("token");
     const role = await AsyncStorage.getItem("role");
-    set({ token, userRole: role, isAuthenticated: !!token });
+    const userRaw = await AsyncStorage.getItem("user");
+    const user = userRaw ? (JSON.parse(userRaw) as AuthUser) : null;
+    set({ token, userRole: role, user, isAuthenticated: !!token });
   },
 }));

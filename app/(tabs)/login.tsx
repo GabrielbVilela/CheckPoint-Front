@@ -12,15 +12,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useAuthStore } from "../store/authStore";
+import { endpoints } from "@/config/env";
+import { useAuthStore } from "@/store/authStore";
 
 interface TokenPayload {
   sub: string;
   scope?: string;
   exp?: number;
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+  matricula?: string;
+  preferred_username?: string;
 }
 
-export default function LoginScreen() {
+const LoginScreen = () => {
   const [matricula, setMatricula] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,22 +34,26 @@ export default function LoginScreen() {
   const [matriculaErro, setMatriculaErro] = useState(false);
   const [matriculaErroMsg, setMatriculaErroMsg] = useState("");
   const [senhaErroMsg, setSenhaErroMsg] = useState("");
-  const setAuth = useAuthStore((state: any) => state.setAuth);
+  const setAuth = useAuthStore((state) => state.setAuth);
 
-  const handleLogin = async () => {
+  const resetFieldErrors = () => {
     setMatriculaErro(false);
     setSenhaIncorreta(false);
     setMatriculaErroMsg("");
     setSenhaErroMsg("");
+  };
+
+  const handleLogin = async () => {
+    resetFieldErrors();
 
     if (!matricula || !senha) {
       if (!matricula) {
         setMatriculaErro(true);
-        setMatriculaErroMsg("Informe sua matrícula");
+        setMatriculaErroMsg("Informe sua matricula.");
       }
       if (!senha) {
         setSenhaIncorreta(true);
-        setSenhaErroMsg("Informe sua senha");
+        setSenhaErroMsg("Informe sua senha.");
       }
       return;
     }
@@ -51,7 +61,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const response = await axios.post(
-        "https://backend-expo-681689392736.us-central1.run.app/login",
+        endpoints.login,
         new URLSearchParams({
           username: matricula,
           password: senha,
@@ -60,17 +70,28 @@ export default function LoginScreen() {
       );
 
       const token = response.data.access_token;
-
       const decoded: TokenPayload = jwtDecode(token);
-      console.log("📜 Token decodificado:", decoded);
 
       const role = decoded.scope
         ? decoded.scope.trim().toLowerCase()
         : "aluno";
 
-      console.log("👤 Papel detectado:", role);
+      const userName =
+        decoded.name ??
+        decoded.given_name ??
+        decoded.preferred_username ??
+        decoded.family_name ??
+        null;
 
-      await setAuth(token, role);
+      await setAuth({
+        token,
+        role,
+        user: {
+          id: decoded.sub ?? null,
+          matricula: decoded.matricula ?? decoded.sub ?? null,
+          name: userName,
+        },
+      });
 
       setTimeout(() => {
         if (role === "aluno") {
@@ -79,18 +100,19 @@ export default function LoginScreen() {
           router.push("/(tabs)/cadastroaluno");
         }
       }, 200);
-
     } catch (error: any) {
-      console.log("❌ Erro ao fazer login:", error.response?.data || error.message);
+      console.error("Erro ao fazer login:", error.response?.data ?? error);
       const status = error.response?.status;
-      const detail = error.response?.data?.detail || "Não foi possível conectar ao servidor.";
+      const detail =
+        error.response?.data?.detail ??
+        "Nao foi possivel conectar ao servidor.";
 
       if (status === 401) {
         setSenhaIncorreta(true);
-        setSenhaErroMsg("Matrícula ou senha incorreta");
+        setSenhaErroMsg("Matricula ou senha incorreta.");
       } else if (status === 404) {
         setMatriculaErro(true);
-        setMatriculaErroMsg("Usuário não encontrado");
+        setMatriculaErroMsg("Usuario nao encontrado.");
       } else {
         Alert.alert("Erro ao logar", detail);
       }
@@ -109,9 +131,9 @@ export default function LoginScreen() {
       <Text style={styles.title}>Vamos marcar esse momento?</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Matrícula</Text>
+        <Text style={styles.label}>Matricula</Text>
         <TextInput
-          placeholder="Digite sua Matrícula"
+          placeholder="Digite sua matricula"
           placeholderTextColor="rgba(0,0,0,0.4)"
           value={matricula}
           onChangeText={(text) => {
@@ -160,19 +182,19 @@ export default function LoginScreen() {
         )}
       </TouchableOpacity>
 
-      <Text style={styles.copyright}>© NassauCode</Text>
+      <Text style={styles.footer}>�(c) NassauCode</Text>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
     flex: 1,
     justifyContent: "flex-start",
-    alignItems: "center",
     padding: 20,
     paddingTop: 40,
-    backgroundColor: "#f9f9f9",
   },
   title: {
     fontSize: 24,
@@ -181,46 +203,46 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   logo: {
-    width: 720,
     height: 216,
-    resizeMode: "contain",
     marginBottom: 8,
+    resizeMode: "contain",
+    width: 720,
   },
   label: {
+    backgroundColor: "#f9f9f9",
+    color: "#555",
+    fontSize: 12,
+    left: 10,
+    paddingHorizontal: 4,
     position: "absolute",
     top: -10,
-    left: 10,
-    backgroundColor: "#f9f9f9",
-    paddingHorizontal: 4,
-    fontSize: 12,
-    color: "#555",
     zIndex: 1,
   },
   input: {
-    width: "100%",
-    height: 50,
-    borderWidth: 1,
+    backgroundColor: "#fff",
     borderColor: "#ccc",
     borderRadius: 8,
+    borderWidth: 1,
+    height: 50,
     paddingHorizontal: 10,
-    backgroundColor: "#fff",
+    width: "100%",
   },
   inputError: {
     borderColor: "#e53935",
   },
   errorText: {
     color: "#e53935",
-    marginTop: 6,
     fontSize: 12,
+    marginTop: 6,
   },
   button: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#42a148ff",
-    justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#42a148ff",
     borderRadius: 8,
+    height: 50,
+    justifyContent: "center",
     marginTop: 10,
+    width: "100%",
   },
   buttonText: {
     color: "#fff",
@@ -228,15 +250,19 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   inputContainer: {
-    width: "100%",
     marginBottom: 20,
     position: "relative",
+    width: "100%",
   },
-  copyright: {
-    marginTop: 18,
+  footer: {
     color: "#000",
+    marginTop: 18,
     opacity: 0.35,
     textAlign: "center",
     width: "100%",
   },
 });
+
+export default LoginScreen;
+
+

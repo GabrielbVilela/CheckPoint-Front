@@ -1,31 +1,29 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-// Lógica principal
-// ...existing code...
-import { usePointRegistration } from '../hooks/usePointRegistration';
-// ...existing code...
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import "expo-router/entry";
-import { useAuthStore } from '../store/authStore';
+import { usePointRegistration } from "@/hooks/usePointRegistration";
+import { useAuthStore } from "@/store/authStore";
 
-// --- Dados Mockados do Usuário (Para exibição na Tela 2) ---
-// Em um projeto avançado, você faria uma requisição à API para obter esses dados após o login
-const mockUserInfo = {
-    nome: 'Estagiário de Direito',
-    matricula: '123456',
-    curso: 'DIREITO',
-    periodo: '5º',
-    // O userRole virá do Zustand, este é apenas um exemplo
+const formatTimestamp = (isoString: string) => {
+  const date = new Date(isoString);
+  const time = date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const fullDate = date.toLocaleDateString("pt-BR");
+  return { time, fullDate };
 };
-// -----------------------------------------------------------
 
-const PointScreen = () => {
-  const userRole = useAuthStore((state: any) => state.userRole);
-  const isAuthenticated = useAuthStore((state: any) => state.isAuthenticated);
-
-  // Protege contra requisições sem autenticação
-  if (!isAuthenticated) {
-    return null;
-  }
+const PointScreenAuthenticated = () => {
+  const user = useAuthStore((state) => state.user);
+  const userRole = useAuthStore((state) => state.userRole);
 
   const {
     pointData,
@@ -33,83 +31,77 @@ const PointScreen = () => {
     error: pointError,
     capturePoint,
     confirmPointRegistration,
-    cancelConfirmation
+    cancelConfirmation,
   } = usePointRegistration();
 
-  // A tela de ponto só é visível para o Aluno
-  const isAluno = userRole === 'aluno';
-  
-  // Função auxiliar para formatar a data/hora
-  const formatTime = (isoString: string) => {
-    const date = new Date(isoString);
-    // Para fins de demonstração, o componente pode atualizar o relógio local a cada segundo
-    const time = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const fullDate = date.toLocaleDateString('pt-BR');
-    return { time, fullDate };
-  };
-
-  // 🔄 Estado para o Relógio em Tempo Real na UI (separado da lógica de ponto)
   const [localTime, setLocalTime] = useState(new Date().toISOString());
+  const isAluno = userRole === "aluno";
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    // Atualiza o relógio a cada segundo para o display visual
     const interval = setInterval(() => {
       setLocalTime(new Date().toISOString());
     }, 1000);
-    return () => clearInterval(interval); // Limpeza ao desmontar
-  }, [isAuthenticated]);
+    return () => clearInterval(interval);
+  }, []);
 
-  // Usa o timestamp do ponto capturado (Tela 2) ou o relógio local (Tela 1)
-  const displayTimestamp = pointData ? pointData.timestamp : localTime;
-  const { time, fullDate } = formatTime(displayTimestamp);
+  const displayTimestamp = useMemo(
+    () => (pointData ? pointData.timestamp : localTime),
+    [pointData, localTime]
+  );
+
+  const { time, fullDate } = formatTimestamp(displayTimestamp);
 
   if (!isAluno) {
     return (
-        <View style={[styles.container, { justifyContent: 'center' }]}>
-            <Text style={styles.mainTitle}>ACESSO RESTRITO</Text>
-            <Text style={styles.errorText}>Seu perfil ({userRole?.toUpperCase()}) não tem acesso a esta tela.</Text>
-        </View>
+      <View style={[styles.container, { justifyContent: "center" }]}>
+        <Text style={styles.mainTitle}>ACESSO RESTRITO</Text>
+        <Text style={styles.errorText}>
+          Seu perfil ({userRole?.toUpperCase()}) nao tem acesso a esta tela.
+        </Text>
+      </View>
     );
   }
 
-
-  // 🛑 TELA 2: CONFIRMAÇÃO DE PONTO (image_4a4c0a.png)
   if (pointData) {
     return (
       <View style={styles.container}>
-        <Text style={styles.mainTitle}>PONTO ELETRÔNICO</Text>
-        
+        <Text style={styles.mainTitle}>PONTO ELETRONICO</Text>
+
         <View style={styles.pointCard}>
-          {/* Box de Informações do Colaborador, seguindo o protótipo */}
           <View style={styles.userInfoBox}>
             <Text style={styles.collaboratorTitle}>Colaborador</Text>
-            <Text style={styles.userInfoText}>ALUNO: {mockUserInfo.nome}</Text>
-            <Text style={styles.userInfoText}>MATRÍCULA: {mockUserInfo.matricula}</Text>
+            <Text style={styles.userInfoText}>
+              ALUNO: {user?.name ?? "Usuario autenticado"}
+            </Text>
+            <Text style={styles.userInfoText}>
+              MATRICULA: {user?.matricula ?? user?.id ?? "-"}
+            </Text>
           </View>
 
           <Text style={styles.timeText}>{time}</Text>
           <Text style={styles.dateText}>{fullDate}</Text>
-          
+
           <Text style={styles.confirmationText}>Confirmar o registro?</Text>
-          
+
           <View style={styles.buttonGroup}>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.cancelButton]} 
-              onPress={cancelConfirmation} 
+            <TouchableOpacity
+              style={[styles.actionButton, styles.cancelButton]}
+              onPress={cancelConfirmation}
               disabled={isProcessing}
             >
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.registerButton]} 
-              onPress={confirmPointRegistration} 
+            <TouchableOpacity
+              style={[styles.actionButton, styles.registerButton]}
+              onPress={confirmPointRegistration}
               disabled={isProcessing}
             >
-              {isProcessing
-                ? <ActivityIndicator color="#fff" /> 
-                : <Text style={styles.registerButtonText}>Registrar</Text>}
+              {isProcessing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.registerButtonText}>Registrar</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -118,27 +110,25 @@ const PointScreen = () => {
     );
   }
 
-  // 🟢 TELA 1: BATER PONTO (image_4a4924.png)
   return (
     <View style={styles.container}>
-      <Text style={styles.mainTitle}>PONTO ELETRÔNICO</Text>
+      <Text style={styles.mainTitle}>PONTO ELETRONICO</Text>
 
       <View style={styles.pointCard}>
         <Text style={styles.timeText}>{time}</Text>
         <Text style={styles.dateText}>{fullDate}</Text>
-        
-        {isProcessing 
-          ? <ActivityIndicator size="large" color="#4CAF50" style={{ marginVertical: 20 }} />
-          : (
-            <TouchableOpacity 
-              style={styles.mainButton} 
-              onPress={capturePoint}
-              // O botão só é habilitado se não houver erro de localização
-              disabled={!!pointError} 
-            >
-              <Text style={styles.mainButtonText}>BATER PONTO !</Text>
-            </TouchableOpacity>
-          )}
+
+        {isProcessing ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <TouchableOpacity
+            style={styles.mainButton}
+            onPress={capturePoint}
+            disabled={!!pointError}
+          >
+            <Text style={styles.mainButtonText}>BATER PONTO!</Text>
+          </TouchableOpacity>
+        )}
 
         {pointError && <Text style={styles.errorText}>{pointError}</Text>}
       </View>
@@ -146,118 +136,127 @@ const PointScreen = () => {
   );
 };
 
-// --- Estilos Baseados nos Protótipos (Foco em Layout) ---
+const PointScreen = () => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <PointScreenAuthenticated />;
+};
+
 const styles = StyleSheet.create({
   container: {
+    alignItems: "center",
+    backgroundColor: "#fff",
     flex: 1,
-    alignItems: 'center',
-    paddingTop: 80, 
-    backgroundColor: '#fff', // Fundo padrão branco
+    paddingTop: 80,
   },
   mainTitle: {
+    color: "#000",
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: "bold",
     marginBottom: 50,
   },
   pointCard: {
-    width: '90%',
-    maxWidth: 350,
-    backgroundColor: '#fff',
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: "#ddd",
     borderRadius: 15,
-    padding: 30,
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
-    // Sombra (Opcional, mas melhora o visual no mobile)
-    shadowColor: '#000',
+    elevation: 3,
+    maxWidth: 350,
+    padding: 30,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    elevation: 3, 
+    width: "90%",
   },
   userInfoBox: {
-    width: '100%',
-    padding: 10,
-    marginBottom: 15,
+    alignItems: "flex-start",
+    borderBottomColor: "#eee",
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    alignItems: 'flex-start',
+    marginBottom: 15,
+    padding: 10,
+    width: "100%",
   },
   collaboratorTitle: {
-    fontWeight: 'bold',
     fontSize: 16,
+    fontWeight: "bold",
     marginBottom: 5,
   },
   userInfoText: {
+    color: "#333",
     fontSize: 14,
-    color: '#333',
   },
   timeText: {
+    color: "#333",
     fontSize: 50,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
   },
   dateText: {
+    color: "#666",
     fontSize: 18,
-    color: '#666',
     marginBottom: 40,
   },
   mainButton: {
-    backgroundColor: '#4CAF50', // Verde
-    paddingVertical: 15,
-    paddingHorizontal: 30,
+    alignItems: "center",
+    backgroundColor: "#4CAF50",
     borderRadius: 8,
     marginTop: 20,
-    width: '100%',
-    alignItems: 'center',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    width: "100%",
   },
   mainButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   confirmationText: {
+    color: "#333",
     fontSize: 18,
+    fontWeight: "600",
     marginVertical: 20,
-    fontWeight: '600',
-    color: '#333',
   },
   buttonGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 10,
+    width: "100%",
   },
   actionButton: {
-    flex: 1,
-    paddingVertical: 15,
+    alignItems: "center",
     borderRadius: 8,
-    alignItems: 'center',
+    flex: 1,
     marginHorizontal: 5,
+    paddingVertical: 15,
   },
   cancelButton: {
-    backgroundColor: '#E53935', // Vermelho
+    backgroundColor: "#E53935",
   },
   registerButton: {
-    backgroundColor: '#4CAF50', // Verde
+    backgroundColor: "#4CAF50",
   },
   cancelButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   registerButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   errorText: {
-    color: '#E53935',
+    color: "#E53935",
+    fontWeight: "bold",
     marginTop: 10,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  }
+    textAlign: "center",
+  },
 });
 
 export default PointScreen;
+
