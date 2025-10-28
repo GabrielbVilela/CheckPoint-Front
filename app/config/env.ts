@@ -12,12 +12,12 @@ const readEnv = (): EnvConfig => {
 
   if (!envApiUrl) {
     console.warn(
-      "[env] EXPO_PUBLIC_API_URL nao foi definido; usando fallback http://localhost:8000"
+      "[env] EXPO_PUBLIC_API_URL nao foi definido; usando https://backend-expo-681689392736.us-central1.run.app"
     );
   }
 
   return {
-    apiUrl: envApiUrl ?? "http://localhost:8000",
+    apiUrl: envApiUrl ?? "https://backend-expo-681689392736.us-central1.run.app",
   };
 };
 
