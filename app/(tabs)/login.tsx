@@ -1,3 +1,5 @@
+import { getEndpoints } from "@/config/env";
+import { useAuthStore } from "@/store/authStore";
 import axios from "axios";
 import { router } from "expo-router";
 import { jwtDecode } from "jwt-decode";
@@ -12,8 +14,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { endpoints } from "@/config/env";
-import { useAuthStore } from "@/store/authStore";
 
 interface TokenPayload {
   sub: string;
@@ -65,6 +65,7 @@ const LoginScreen = () => {
 
     setLoading(true);
     try {
+      const endpoints = getEndpoints();
       const response = await axios.post(
         endpoints.login,
         new URLSearchParams({
@@ -100,7 +101,9 @@ const LoginScreen = () => {
 
       setTimeout(() => {
         const targetRoute = ROUTES_BY_ROLE[role] ?? "/(tabs)";
-        router.replace(targetRoute);
+        // router.replace has a narrow typing for allowed paths; cast to any to
+        // preserve runtime behavior while keeping TypeScript happy.
+        router.replace(targetRoute as any);
       }, 200);
     } catch (error: any) {
       console.error("Erro ao fazer login:", error.response?.data ?? error);

@@ -1,9 +1,9 @@
+import { getEndpoints } from "@/config/env";
+import getApiClient from "@/services/api";
+import { useAuthStore } from "@/store/authStore";
 import * as Location from "expo-location";
 import { useState } from "react";
 import { Alert } from "react-native";
-import { endpoints } from "@/config/env";
-import api from "@/services/api";
-import { useAuthStore } from "@/store/authStore";
 
 export interface PointData {
   latitude: number | null;
@@ -76,6 +76,8 @@ export const usePointRegistration = () => {
     setError(null);
 
     try {
+      const api = getApiClient();
+      const endpoints = getEndpoints();
       const response = await api.post(endpoints.registro, {
         timestamp: pointData.timestamp,
         latitude: pointData.latitude,

@@ -1,35 +1,45 @@
-import axios from "axios";
-import { env } from "@/config/env";
+import { getEnvConfig } from "@/config/env";
 import { useAuthStore } from "@/store/authStore";
+import axios, { AxiosInstance } from "axios";
 
-const api = axios.create({
-  baseURL: env.apiUrl,
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+/**
+ * Cria um cliente Axios configurado em runtime. Evita usar valores avaliados
+ * no momento do import (que podem ser undefined em alguns ambientes).
+ */
+export const getApiClient = (): AxiosInstance => {
+  const { apiUrl } = getEnvConfig();
 
-// Request interceptor: attaches the bearer token when available
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+  const client = axios.create({
+    baseURL: apiUrl,
+    timeout: 10000,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
-// Response interceptor: logs the user out on 401 responses
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      console.warn("Sessao expirada. Redirecionando para o login.");
-      useAuthStore.getState().logout();
+  // Request interceptor: attaches the bearer token when available
+  client.interceptors.request.use((config) => {
+    const token = useAuthStore.getState().token;
+    if (token && config && config.headers) {
+      (config.headers as any).Authorization = `Bearer ${token}`;
     }
-    return Promise.reject(error);
-  }
-);
+    return config;
+  });
 
-export default api;
+  // Response interceptor: logs the user out on 401 responses
+  client.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        console.warn("Sessao expirada. Redirecionando para o login.");
+        useAuthStore.getState().logout();
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  return client;
+};
+
+export default getApiClient;
 

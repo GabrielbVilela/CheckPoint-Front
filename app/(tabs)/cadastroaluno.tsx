@@ -1,13 +1,4 @@
-import React, { useEffect, useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { getEndpoints } from "@/config/env";
 import {
   AddressStep,
 } from "@/features/cadastro/components/AddressStep";
@@ -41,8 +32,17 @@ import {
   isValidDate,
   validateStep,
 } from "@/features/cadastro/validation";
-import { endpoints } from "@/config/env";
-import api from "@/services/api";
+import getApiClient from "@/services/api";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 const INITIAL_FORM: CadastroAlunoForm = {
   nome: "",
@@ -162,11 +162,11 @@ const CadastroAlunoScreen = () => {
       setErrors((prev) => ({ ...prev, ...stepErrors }));
       return;
     }
-    setStep((prev) => Math.min((prev + 1) as CadastroAlunoStep, 3));
+    setStep((prev) => Math.min(prev + 1, 3) as CadastroAlunoStep);
   };
 
   const handleBack = () => {
-    setStep((prev) => Math.max((prev - 1) as CadastroAlunoStep, 1));
+    setStep((prev) => Math.max(prev - 1, 1) as CadastroAlunoStep);
   };
 
   const handlePeriodoSelect = (option: PeriodoOption) => {
@@ -264,6 +264,8 @@ const CadastroAlunoScreen = () => {
     }
 
     try {
+      const api = getApiClient();
+      const endpoints = getEndpoints();
       await api.post(endpoints.alunos, form);
       Alert.alert("Sucesso", "Aluno cadastrado com sucesso!");
       setForm({ ...INITIAL_FORM });
