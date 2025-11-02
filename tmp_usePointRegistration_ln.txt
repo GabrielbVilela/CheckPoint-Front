@@ -1,0 +1,146 @@
+1: import { getEndpoints } from "@/config/env";
+2: import getApiClient from "@/services/api";
+3: import { useAuthStore } from "@/store/authStore";
+4: import * as Location from "expo-location";
+5: import { useState } from "react";
+6: import { Alert } from "react-native";
+7: 
+8: export interface PointData {
+9:   latitude: number | null;
+10:   longitude: number | null;
+11:   timestamp: string;
+12: }
+13: 
+14: export const usePointRegistration = () => {
+15:   const [pointData, setPointData] = useState<PointData | null>(null);
+16:   const [loading, setLoading] = useState(false);
+17:   const [error, setError] = useState<string | null>(null);
+18: 
+19:   const ensureAuthenticated = () => {
+20:     const currentAuth = useAuthStore.getState().isAuthenticated;
+21:     if (!currentAuth) {
+22:       setError("Sessao expirada. Faca login novamente.");
+23:       return false;
+24:     }
+25:     return true;
+26:   };
+27: 
+28:   const capturePoint = async () => {
+29:     if (!ensureAuthenticated()) {
+30:       return;
+31:     }
+32: 
+33:     setLoading(true);
+34:     setError(null);
+35: 
+36:     const { status } = await Location.requestForegroundPermissionsAsync();
+37:     if (status !== "granted") {
+38:       setError(
+39:         "Permissao de acesso a localizacao negada. Habilite o GPS nas configuracoes."
+40:       );
+41:       setLoading(false);
+42:       return;
+43:     }
+44: 
+45:     try {
+46:       const location = await Location.getCurrentPositionAsync({
+47:         accuracy: Location.Accuracy.High,
+48:         timeInterval: 10000,
+49:       });
+50: 
+51:       const newPointData: PointData = {
+52:         latitude: location.coords.latitude,
+53:         longitude: location.coords.longitude,
+54:         timestamp: new Date().toISOString(),
+55:       };
+56: 
+57:       setPointData(newPointData);
+58:     } catch (err) {
+59:       console.error("Erro ao capturar localizacao:", err);
+60:       setError("Nao foi possivel obter a sua localizacao. Verifique o GPS.");
+61:     } finally {
+62:       setLoading(false);
+63:     }
+64:   };
+65: 
+66:   const confirmPointRegistration = async () => {
+67:     if (!ensureAuthenticated()) {
+68:       return;
+69:     }
+70:     if (!pointData) {
+71:       setError("Nenhum dado de ponto para registrar.");
+72:       return;
+73:     }
+74: 
+75:     setLoading(true);
+76:     setError(null);
+77: 
+78:     try {
+79:       const api = getApiClient();
+80:       const endpoints = getEndpoints();
+81:       const authState = useAuthStore.getState();
+82:       const rawId = authState.user?.id ?? authState.user?.matricula ?? null;
+83:       const idAluno = rawId != null ? parseInt(String(rawId), 10) : NaN;
+84: 
+85:       if (!Number.isFinite(idAluno)) {
+86:         throw new Error("Identificador do aluno ausente ou invalido (matricula/id).");
+87:       }
+88: 
+89:       const payload = {
+90:         id_aluno: idAluno,
+91:         latitude_atual: pointData.latitude,
+92:         longitude_atual: pointData.longitude,
+93:       };
+94: 
+95:       const response = await api.post(endpoints.registro, payload);
+96: 
+97:       if (response.status === 201 || response.status === 200) {
+98:         Alert.alert(
+99:           "Sucesso",
+100:           "Ponto registrado! O backend esta validando sua localizacao."
+101:         );
+102:         setPointData(null);
+103:       }
+104:     } catch (err: any) {
+105:       console.error("Erro ao registrar ponto:", err);
+106:       let errorMessage = "Erro ao comunicar com o servidor.";
+107: 
+108:       if (err?.code === "ERR_NETWORK" || err?.message === "Network Error") {
+109:         errorMessage =
+110:           "Falha de comunicacao com o servidor. Se estiver no navegador, atualize a pagina e tente novamente.";
+111:       } else if (err?.response?.status === 422) {
+112:         const detail = err?.response?.data?.detail;
+113:         if (typeof detail === "string") {
+114:           errorMessage = detail;
+115:         } else if (Array.isArray(detail)) {
+116:           errorMessage =
+117:             detail
+118:               .map((d: any) => d?.msg)
+119:               .filter(Boolean)
+120:               .join("; ") || "Requisicao invalida.";
+121:         } else {
+122:           errorMessage = "Requisicao invalida.";
+123:         }
+124:       } else if (err?.response?.data?.detail) {
+125:         errorMessage = err.response.data.detail;
+126:       }
+127: 
+128:       setError(`Falha no registro: ${errorMessage}`);
+129:     } finally {
+130:       setLoading(false);
+131:     }
+132:   };
+133: 
+134:   const cancelConfirmation = () => setPointData(null);
+135: 
+136:   return {
+137:     pointData,
+138:     loading,
+139:     error,
+140:     capturePoint,
+141:     confirmPointRegistration,
+142:     cancelConfirmation,
+143:   };
+144: };
+145: 
+146: export default usePointRegistration;

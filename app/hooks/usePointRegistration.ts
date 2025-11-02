@@ -78,11 +78,48 @@ export const usePointRegistration = () => {
     try {
       const api = getApiClient();
       const endpoints = getEndpoints();
-      const response = await api.post(endpoints.registro, {
-        timestamp: pointData.timestamp,
-        latitude: pointData.latitude,
-        longitude: pointData.longitude,
-      });
+      const authState = useAuthStore.getState();
+      const rawId = authState.user?.id ?? authState.user?.matricula ?? null;
+      const idAluno = rawId != null ? parseInt(String(rawId), 10) : NaN;
+
+      if (!Number.isFinite(idAluno)) {
+        throw new Error("Identificador do aluno ausente ou invalido (matricula/id).");
+      }
+
+      const payload = {
+        id_aluno: idAluno,
+        latitude_atual: pointData.latitude,
+        longitude_atual: pointData.longitude,
+      };
+
+      // Passo 1: verificar localizacao antes de registrar
+      try {
+        await api.post(endpoints.verificarLocalizacao, payload);
+      } catch (verr: any) {
+        let vMsg = "Nao foi possivel verificar sua localizacao.";
+        if (verr?.code === "ERR_NETWORK" || verr?.message === "Network Error") {
+          vMsg =
+            "Falha de comunicacao com o servidor. Se estiver no navegador, atualize a pagina e tente novamente.";
+        } else if (verr?.response?.status === 422) {
+          const detail = verr?.response?.data?.detail;
+          if (typeof detail === "string") {
+            vMsg = detail;
+          } else if (Array.isArray(detail)) {
+            vMsg =
+              detail
+                .map((d: any) => d?.msg)
+                .filter(Boolean)
+                .join("; ") || vMsg;
+          }
+        } else if (verr?.response?.data?.detail) {
+          vMsg = verr.response.data.detail;
+        }
+        setError(`Falha na verificacao de localizacao: ${vMsg}`);
+        return; // nao prosseguir para o registro
+      }
+
+      // Passo 2: registrar ponto
+      const response = await api.post(endpoints.registro, payload);
 
       if (response.status === 201 || response.status === 200) {
         Alert.alert(
@@ -93,8 +130,28 @@ export const usePointRegistration = () => {
       }
     } catch (err: any) {
       console.error("Erro ao registrar ponto:", err);
-      const errorMessage =
-        err.response?.data?.detail ?? "Erro ao comunicar com o servidor.";
+      let errorMessage = "Erro ao comunicar com o servidor.";
+
+      if (err?.code === "ERR_NETWORK" || err?.message === "Network Error") {
+        errorMessage =
+          "Falha de comunicacao com o servidor. Se estiver no navegador, atualize a pagina e tente novamente.";
+      } else if (err?.response?.status === 422) {
+        const detail = err?.response?.data?.detail;
+        if (typeof detail === "string") {
+          errorMessage = detail;
+        } else if (Array.isArray(detail)) {
+          errorMessage =
+            detail
+              .map((d: any) => d?.msg)
+              .filter(Boolean)
+              .join("; ") || "Requisicao invalida.";
+        } else {
+          errorMessage = "Requisicao invalida.";
+        }
+      } else if (err?.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      }
+
       setError(`Falha no registro: ${errorMessage}`);
     } finally {
       setLoading(false);

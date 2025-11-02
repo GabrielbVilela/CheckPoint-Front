@@ -28,6 +28,7 @@ export const getEndpoints = () => {
   return {
     login: `${apiUrl}/login`,
     registro: `${apiUrl}/ponto/entrada`,
+    verificarLocalizacao: `${apiUrl}/ponto/verificar-localizacao`,
     alunos: `${apiUrl}/alunos`,
   } as const;
 };
