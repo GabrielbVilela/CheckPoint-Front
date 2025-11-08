@@ -44,7 +44,4 @@ export type PeriodoOption = {
  */
 export type CadastroDateField = "dataInicio" | "dataFim";
 
-// Default export to satisfy expo-router which treats files in `app/` as routes.
-export default function _dummy_types() {
-  return null as any;
-}
+export default CadastroAlunoForm;

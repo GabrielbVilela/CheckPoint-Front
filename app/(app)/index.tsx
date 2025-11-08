@@ -5,12 +5,12 @@ import { useRouter } from "expo-router";
 import "expo-router/entry";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from "react-native";
 
 const styles = StyleSheet.create({
@@ -282,12 +282,12 @@ const PointScreen = () => {
     const checkAuth = async () => {
       try {
         if (!isAuthenticated) {
-          await router.replace("/(tabs)/login");
+          await router.replace("/(tabs)/login" as any);
           return;
         }
-        
+
         if (userRole !== "aluno") {
-          await router.replace("/(tabs)/cadastroaluno");
+          await router.replace("/(tabs)/cadastroaluno" as any);
         }
       } catch (error) {
         console.error("Erro ao redirecionar:", error);

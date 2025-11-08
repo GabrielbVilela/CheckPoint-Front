@@ -51,11 +51,3 @@ export const formatCep = (value: string) => {
   if (digits.length <= 5) return digits;
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 };
-
-// expo-router expects default export for files in `app/` (routes).
-// This file is a utilities file; provide a harmless default export to
-// avoid the router warning while keeping backward-compatible behavior.
-export default function _dummy_formatters() {
-  return null as any;
-}
-

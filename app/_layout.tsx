@@ -1,63 +1,61 @@
 import { useAuthStore } from "@/store/authStore";
-import { Slot, SplashScreen, useRouter, useSegments } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { router, SplashScreen, Stack, useSegments } from "expo-router";
+import React, { useEffect } from "react";
 
 SplashScreen.preventAutoHideAsync();
 
-const RootLayout = () => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const userRole = useAuthStore((state) => state.userRole);
-  const segments = useSegments();
-  const router = useRouter();
-  const loadAuth = useAuthStore((state) => state.loadAuth);
-  const [appIsReady, setAppIsReady] = useState(false);
+export default function RootLayout() {
+  // Selecionamos cada valor separadamente
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const userRole = useAuthStore((state) => state.userRole);
 
-  // Efeito para inicialização e carregamento do estado de autenticação
-  useEffect(() => {
-    async function initializeApp() {
-      try {
-        await loadAuth();
-      } catch (error) {
-        console.error("Erro ao carregar credenciais:", error);
-      } finally {
-        setAppIsReady(true);
-        await SplashScreen.hideAsync();
-      }
-    }
+  const isLoading = false; 
+  const segments = useSegments();
 
-    initializeApp();
-  }, [loadAuth]);
+  // Mantenha os logs por enquanto para testar
+  // Debug logs removidos para produção
 
-  // Efeito para controle de navegação baseado na autenticação
-  useEffect(() => {
-    if (!appIsReady) return;
+  useEffect(() => {
+    let mounted = true;
+		(async () => {
+			if (!isLoading && mounted) {
+				try { await SplashScreen.hideAsync(); } catch { /* ignore */ }
+			}
+		})();
+    return () => { mounted = false; };
+  }, [isLoading]);
 
-    const inAuthGroup = segments[0] === "(tabs)";
-    const inLoginScreen = segments[1] === "login";
+  if (isLoading) {
+    return null; 
+  }
 
-    if (!isAuthenticated) {
-      // Se não estiver autenticado, redireciona para login
-      router.replace("/(tabs)/login");
-    } else if (isAuthenticated && inLoginScreen) {
-      // Se estiver autenticado, redireciona baseado no papel
-      switch (userRole) {
-        case "aluno":
-          router.replace("/(tabs)");
-          break;
-        case "coordenador":
-          router.replace("/(tabs)/cadastroaluno");
-          break;
-        default:
-          router.replace("/(tabs)/login");
-      }
-    }
-  }, [appIsReady, isAuthenticated, segments, userRole, router]);
+  const inAuthGroup = segments[0] === '(auth)';
 
-  if (!appIsReady) {
-    return null;
-  }
+	if (!isAuthenticated && !inAuthGroup) {
+		// redirecting to login because user is not authenticated and not in (auth)
+		try { router.replace("/(auth)/login"); } catch { /* ignore */ }
+		return null;
+	}
 
-  return <Slot />;
-};
-
-export default RootLayout;
+	if (isAuthenticated && inAuthGroup) {
+		// redirecting out of (auth) because user is authenticated and is in (auth)
+		try {
+					if (userRole === "aluno") {
+						router.replace("/(app)" as any);
+					} else if (userRole === "coordenador") {
+						router.replace("/(app)/cadastroaluno" as any);
+					} else {
+						router.replace("/(app)" as any);
+					}
+			} catch { // ignore
+			}
+		return null;
+	}
+  
+  // nenhum redirect aplicavel, renderizando Stack
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(app)" /> {/* <-- MUDANÇA AQUI */}
+    </Stack>
+  );
+}

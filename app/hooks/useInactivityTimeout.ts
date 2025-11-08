@@ -24,8 +24,8 @@ export const useInactivityTimeout = () => {
         console.error("Erro ao encerrar sessao por inatividade:", error);
       })
       .finally(() => {
-        router.replace("/(tabs)/login");
-      });
+          router.replace("/(tabs)/login" as any);
+        });
   }, [clearTimer, logout, router]);
 
   const resetTimer = useCallback(() => {

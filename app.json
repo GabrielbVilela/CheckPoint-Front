@@ -44,5 +44,9 @@
       "typedRoutes": true,
       "reactCompiler": true
     }
+    ,
+    "extra": {
+      "EXPO_PUBLIC_API_URL": "https://backend-expo-681689392736.us-central1.run.app"
+    }
   }
 }

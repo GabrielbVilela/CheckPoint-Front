@@ -1,3 +1,5 @@
+import { endpoints } from "@/config/env";
+import { useAuthStore } from "@/store/authStore";
 import axios from "axios";
 import { router } from "expo-router";
 import { jwtDecode } from "jwt-decode";
@@ -12,8 +14,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { endpoints } from "@/config/env";
-import { useAuthStore } from "@/store/authStore";
 
 interface TokenPayload {
   sub: string;
@@ -100,7 +100,7 @@ const LoginScreen = () => {
 
       setTimeout(() => {
         const targetRoute = ROUTES_BY_ROLE[role] ?? "/(tabs)";
-        router.replace(targetRoute);
+        router.replace(targetRoute as any);
       }, 200);
     } catch (error: any) {
       console.error("Erro ao fazer login:", error.response?.data ?? error);

@@ -1,48 +1,48 @@
-import React, { useEffect, useState } from "react";
+import { endpoints } from "@/config/env";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import {
-  AddressStep,
+    AddressStep,
 } from "@/features/cadastro/components/AddressStep";
 import {
-  ContractStep,
+    ContractStep,
 } from "@/features/cadastro/components/ContractStep";
 import {
-  PeriodoModal,
+    PeriodoModal,
 } from "@/features/cadastro/components/PeriodoModal";
 import {
-  PersonalDataStep,
+    PersonalDataStep,
 } from "@/features/cadastro/components/PersonalDataStep";
 import {
-  StepIndicator,
+    StepIndicator,
 } from "@/features/cadastro/components/StepIndicator";
 import {
-  formatCep,
-  formatDateFromDate,
-  formatPhone,
-  onlyDigits,
+    formatCep,
+    formatDateFromDate,
+    formatPhone,
+    onlyDigits,
 } from "@/features/cadastro/formatters";
 import {
-  CadastroAlunoErrors,
-  CadastroAlunoForm,
-  CadastroAlunoStep,
-  CadastroDateField,
-  PeriodoOption,
+    CadastroAlunoErrors,
+    CadastroAlunoForm,
+    CadastroAlunoStep,
+    CadastroDateField,
+    PeriodoOption,
 } from "@/features/cadastro/types";
 import {
-  isEndAfterStart,
-  isValidDate,
-  validateStep,
+    isEndAfterStart,
+    isValidDate,
+    validateStep,
 } from "@/features/cadastro/validation";
-import { endpoints } from "@/config/env";
 import api from "@/services/api";
+import React, { useEffect, useState } from "react";
+import {
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 
 const INITIAL_FORM: CadastroAlunoForm = {
   nome: "",
@@ -162,11 +162,11 @@ const CadastroAlunoScreen = () => {
       setErrors((prev) => ({ ...prev, ...stepErrors }));
       return;
     }
-    setStep((prev) => Math.min((prev + 1) as CadastroAlunoStep, 3));
+    setStep((prev) => Math.min((prev as number) + 1, 3) as CadastroAlunoStep);
   };
 
   const handleBack = () => {
-    setStep((prev) => Math.max((prev - 1) as CadastroAlunoStep, 1));
+    setStep((prev) => Math.max((prev as number) - 1, 1) as CadastroAlunoStep);
   };
 
   const handlePeriodoSelect = (option: PeriodoOption) => {

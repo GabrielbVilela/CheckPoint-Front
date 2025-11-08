@@ -1,6 +1,7 @@
-import axios from "axios";
 import { env } from "@/config/env";
 import { useAuthStore } from "@/store/authStore";
+import axios from "axios";
+import { router } from 'expo-router';
 
 const api = axios.create({
   baseURL: env.apiUrl,
@@ -25,7 +26,15 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       console.warn("Sessao expirada. Redirecionando para o login.");
-      useAuthStore.getState().logout();
+      return (async () => {
+        try {
+          await useAuthStore.getState().logout();
+        } catch (e) {
+          console.warn('Erro no logout automatico:', e);
+        }
+  try { router.replace('/(auth)/login'); } catch { /* fallback noop */ }
+        throw error;
+      })();
     }
     return Promise.reject(error);
   }
