@@ -47,6 +47,15 @@ const RootLayout = () => {
         case "coordenador":
           router.replace("/(tabs)/cadastroaluno");
           break;
+        case "professor":
+          router.replace("/(tabs)/professor");
+          break;
+        case "supervisor":
+          router.replace("/(tabs)/supervisor");
+          break;
+        case "admin":
+          router.replace("/(tabs)/admin");
+          break;
         default:
           router.replace("/(tabs)/login");
       }

@@ -23,6 +23,13 @@ export type CadastroAlunoForm = {
   estado: string;
   dataInicio: string; // dd/mm/yyyy
   dataFim: string; // dd/mm/yyyy
+  horaInicio: string;
+  horaFim: string;
+  tolerancia: string;
+  raio: string;
+  turmaId: string;
+  convenioId: string;
+  supervisorId: string;
 };
 
 /**

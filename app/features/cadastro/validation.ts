@@ -1,24 +1,24 @@
-import { onlyDigits } from "./formatters";
+﻿import { onlyDigits } from "./formatters";
 import {
   CadastroAlunoErrors,
   CadastroAlunoForm,
   CadastroAlunoStep,
 } from "./types";
 
-// Regex simples para validar formato básico de e-mail
+// Regex simples para validar formato bÃ¡sico de e-mail
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// Regex para nome permitindo letras acentuadas e espaços, exigindo pelo menos 2 caracteres
+// Regex para nome permitindo letras acentuadas e espaÃ§os, exigindo pelo menos 2 caracteres
 const nameRegex =
-  /^[A-Za-zÀ-ÖØ-öø-ÿ'`^~\s]{2,}$/;
+  /^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF'`^~\s]{2,}$/u;
 
 export const validateEmail = (email: string) => emailRegex.test(email);
 
 export const validateName = (name: string) => nameRegex.test(name);
 
 /**
- * Valida uma string no formato dd/mm/yyyy verificando se a data existe no calendário.
- * Observação: esta função assume que a string já está no formato correto (2/2/4) e
- * compara componentes via Date para evitar datas inválidas (ex: 31/02/2020).
+ * Valida uma string no formato dd/mm/yyyy verificando se a data existe no calendÃ¡rio.
+ * ObservaÃ§Ã£o: esta funÃ§Ã£o assume que a string jÃ¡ estÃ¡ no formato correto (2/2/4) e
+ * compara componentes via Date para evitar datas invÃ¡lidas (ex: 31/02/2020).
  */
 export const isValidDate = (value: string) => {
   const digits = onlyDigits(value);
@@ -40,9 +40,9 @@ export const isValidDate = (value: string) => {
 };
 
 /**
- * Verifica se a data `end` é posterior à `start`. Ambas em dd/mm/yyyy.
- * Converte para Date e compara. Retorna false se os formatos não tiverem 8 dígitos.
- * Nota: não considera horário — compara somente a data (meia-noite local).
+ * Verifica se a data `end` Ã© posterior Ã  `start`. Ambas em dd/mm/yyyy.
+ * Converte para Date e compara. Retorna false se os formatos nÃ£o tiverem 8 dÃ­gitos.
+ * Nota: nÃ£o considera horÃ¡rio â€” compara somente a data (meia-noite local).
  */
 export const isEndAfterStart = (start: string, end: string) => {
   const startDigits = onlyDigits(start);
@@ -63,6 +63,32 @@ export const isEndAfterStart = (start: string, end: string) => {
   return startDate < endDate;
 };
 
+export const isValidTime = (value: string) => {
+  const digits = onlyDigits(value);
+  if (digits.length !== 4) {
+    return false;
+  }
+  const hours = Number(digits.slice(0, 2));
+  const minutes = Number(digits.slice(2));
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return false;
+  }
+  return hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60;
+};
+
+const timeToMinutes = (value: string) => {
+  const digits = onlyDigits(value);
+  if (digits.length !== 4) {
+    return null;
+  }
+  const hours = Number(digits.slice(0, 2));
+  const minutes = Number(digits.slice(2));
+  if ([hours, minutes].some((n) => Number.isNaN(n))) {
+    return null;
+  }
+  return hours * 60 + minutes;
+};
+
 const mergeErrors = (
   current: CadastroAlunoErrors,
   incoming: CadastroAlunoErrors
@@ -70,7 +96,7 @@ const mergeErrors = (
 
 /**
  * Valida os campos do step atual retornando um objeto com mensagens de erro por campo.
- * O container (cadastroaluno) deve usar esse retorno para bloquear avanço de step.
+ * O container (cadastroaluno) deve usar esse retorno para bloquear avanÃ§o de step.
  */
 export const validateStep = (
   step: CadastroAlunoStep,
@@ -86,7 +112,7 @@ export const validateStep = (
       errors.nome = "Digite um nome valido.";
     }
 
-    // Matrícula: espera 8 dígitos numéricos
+    // MatrÃ­cula: espera 8 dÃ­gitos numÃ©ricos
     const matriculaDigits = onlyDigits(form.matricula);
     if (!matriculaDigits) {
       errors.matricula = "Informe a matricula.";
@@ -94,7 +120,7 @@ export const validateStep = (
       errors.matricula = "A matricula deve ter 8 digitos.";
     }
 
-    // Celular: espera 11 dígitos com DDD
+    // Celular: espera 11 dÃ­gitos com DDD
     const celularDigits = onlyDigits(form.celular);
     if (!celularDigits) {
       errors.celular = "Informe o numero de celular.";
@@ -155,8 +181,8 @@ export const validateStep = (
     }
   }
 
+
   if (step === 3) {
-    // Datas: inicio e termino
     if (!form.dataInicio.trim()) {
       errors.dataInicio = "Informe a data de inicio.";
     } else if (!isValidDate(form.dataInicio)) {
@@ -169,7 +195,6 @@ export const validateStep = (
       errors.dataFim = "Data de termino invalida.";
     }
 
-    // Verifica relação entre as datas (fim > inicio)
     if (
       isValidDate(form.dataInicio) &&
       isValidDate(form.dataFim) &&
@@ -177,14 +202,65 @@ export const validateStep = (
     ) {
       errors.dataFim = "A data de termino deve ser posterior a data de inicio.";
     }
+
+    if (!form.horaInicio.trim()) {
+      errors.horaInicio = "Informe a hora inicial prevista.";
+    } else if (!isValidTime(form.horaInicio)) {
+      errors.horaInicio = "Hora inicial invalida (HH:MM).";
+    }
+
+    if (!form.horaFim.trim()) {
+      errors.horaFim = "Informe a hora final prevista.";
+    } else if (!isValidTime(form.horaFim)) {
+      errors.horaFim = "Hora final invalida (HH:MM).";
+    }
+
+    if (isValidTime(form.horaInicio) && isValidTime(form.horaFim)) {
+      const startMinutes = timeToMinutes(form.horaInicio);
+      const endMinutes = timeToMinutes(form.horaFim);
+      if (startMinutes !== null && endMinutes !== null && endMinutes <= startMinutes) {
+        errors.horaFim = "Hora final deve ser posterior a inicial.";
+      }
+    }
+
+    if (!form.tolerancia.trim()) {
+      errors.tolerancia = "Defina a tolerancia em minutos.";
+    } else {
+      const value = Number(form.tolerancia);
+      if (Number.isNaN(value) || value < 0) {
+        errors.tolerancia = "Informe um numero valido para a tolerancia.";
+      }
+    }
+
+    if (!form.raio.trim()) {
+      errors.raio = "Informe o raio permitido em metros.";
+    } else {
+      const value = Number(form.raio);
+      if (Number.isNaN(value) || value <= 0) {
+        errors.raio = "Informe um raio maior que zero.";
+      }
+    }
+
+    if (!form.turmaId.trim()) {
+      errors.turmaId = "Selecione a turma vinculada.";
+    }
+
+    if (!form.convenioId.trim()) {
+      errors.convenioId = "Selecione o convenio.";
+    }
+
+    if (!form.supervisorId.trim()) {
+      errors.supervisorId = "Selecione o supervisor.";
+    }
   }
+
 
   return errors;
 };
 
 /**
  * Valida todos os steps e retorna todos os erros acumulados.
- * Útil antes da submissão final para garantir que nada foi pulado.
+ * Ãštil antes da submissÃ£o final para garantir que nada foi pulado.
  */
 export const validateAllSteps = (form: CadastroAlunoForm) => {
   let errors: CadastroAlunoErrors = {};

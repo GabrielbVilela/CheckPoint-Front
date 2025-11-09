@@ -30,6 +30,19 @@ export const getEndpoints = () => {
     registro: `${apiUrl}/ponto/entrada`,
     verificarLocalizacao: `${apiUrl}/ponto/verificar-localizacao`,
     alunos: `${apiUrl}/alunos`,
+    timeline: `${apiUrl}/ponto/timeline`,
+    justificativas: `${apiUrl}/justificativas`,
+    diarios: `${apiUrl}/diarios`,
+    cursos: `${apiUrl}/cursos`,
+    turmas: `${apiUrl}/turmas`,
+    empresas: `${apiUrl}/empresas`,
+    supervisores: `${apiUrl}/supervisores-externos`,
+    convenios: `${apiUrl}/convenios`,
+    rubricas: `${apiUrl}/avaliacao/rubricas`,
+    avaliacoes: `${apiUrl}/avaliacoes`,
+    avaliacoesExportCsv: `${apiUrl}/avaliacoes/export/csv`,
+    contratosAluno: `${apiUrl}/aluno/contratos/ativos`,
+    documentos: `${apiUrl}/documentos`,
   } as const;
 };
 

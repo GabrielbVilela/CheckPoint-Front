@@ -52,3 +52,14 @@ export const formatCep = (value: string) => {
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 };
 
+/**
+ * Formata hora no padrǜo HH:MM. Mantém apenas 4 dígitos.
+ */
+export const formatTimeInput = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 4);
+  if (digits.length <= 2) {
+    return digits;
+  }
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+};
+

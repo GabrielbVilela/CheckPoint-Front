@@ -28,7 +28,10 @@ interface TokenPayload {
 
 const ROUTES_BY_ROLE: Record<string, string> = {
   aluno: "/(tabs)",
-  coordenador: "/(tabs)/cadastroaluno",
+  coordenador: "/(tabs)/coordenador",
+  professor: "/(tabs)/professor",
+  supervisor: "/(tabs)/supervisor",
+  admin: "/(tabs)/admin",
 };
 
 const LoginScreen = () => {

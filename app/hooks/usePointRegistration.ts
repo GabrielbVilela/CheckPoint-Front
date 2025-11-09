@@ -1,8 +1,13 @@
 import { getEndpoints } from "@/config/env";
 import getApiClient from "@/services/api";
+import {
+  enqueueOfflinePoint,
+  getOfflineQueueLength,
+  syncOfflinePoints,
+} from "@/services/offlineQueue";
 import { useAuthStore } from "@/store/authStore";
 import * as Location from "expo-location";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 
 export interface PointData {
@@ -11,10 +16,37 @@ export interface PointData {
   timestamp: string;
 }
 
+const isNetworkError = (err: any) =>
+  err?.code === "ERR_NETWORK" || err?.message === "Network Error";
+
+const extractApiMessage = (err: any, fallback: string) => {
+  if (err?.response?.status === 422) {
+    const detail = err?.response?.data?.detail;
+    if (typeof detail === "string") {
+      return detail;
+    }
+    if (Array.isArray(detail)) {
+      const collected = detail
+        .map((item: any) => item?.msg)
+        .filter(Boolean)
+        .join("; ");
+      if (collected) {
+        return collected;
+      }
+    }
+  }
+  if (typeof err?.response?.data?.detail === "string") {
+    return err.response.data.detail;
+  }
+  return fallback;
+};
+
 export const usePointRegistration = () => {
   const [pointData, setPointData] = useState<PointData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [queuedCount, setQueuedCount] = useState(0);
+  const [syncingQueue, setSyncingQueue] = useState(false);
 
   const ensureAuthenticated = () => {
     const currentAuth = useAuthStore.getState().isAuthenticated;
@@ -24,6 +56,88 @@ export const usePointRegistration = () => {
     }
     return true;
   };
+
+  const refreshQueuedCount = useCallback(async () => {
+    try {
+      const count = await getOfflineQueueLength();
+      setQueuedCount(count);
+    } catch (err) {
+      console.warn("Falha ao ler fila offline:", err);
+    }
+  }, []);
+
+  const handleSyncOfflinePoints = useCallback(
+    async (showFeedback = false) => {
+      setSyncingQueue(true);
+      try {
+        const result = await syncOfflinePoints();
+        setQueuedCount(result.pending);
+        if (showFeedback) {
+          if (result.sent > 0) {
+            Alert.alert(
+              "Sincronizacao concluida",
+              `${result.sent} ponto(s) enviados com sucesso.`
+            );
+          } else {
+            Alert.alert(
+              "Sincronizacao",
+              "Nenhum ponto pendente encontrado."
+            );
+          }
+        }
+        return result;
+      } catch (err) {
+        console.error("Erro ao sincronizar pontos offline:", err);
+        if (showFeedback) {
+          Alert.alert(
+            "Erro",
+            "Nao foi possivel sincronizar agora. Verifique a conexao."
+          );
+        }
+        throw err;
+      } finally {
+        setSyncingQueue(false);
+      }
+    },
+    []
+  );
+
+  const storeOfflinePoint = useCallback(
+    async (idAluno: number, data: PointData) => {
+      await enqueueOfflinePoint({
+        idAluno,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        timestamp: data.timestamp,
+      });
+      await refreshQueuedCount();
+      setPointData(null);
+      Alert.alert(
+        "Modo offline",
+        "Sem conexao. O ponto foi salvo e sera sincronizado automaticamente."
+      );
+    },
+    [refreshQueuedCount]
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    const bootstrap = async () => {
+      await refreshQueuedCount();
+      if (!mounted) {
+        return;
+      }
+      try {
+        await handleSyncOfflinePoints(false);
+      } catch {
+        console.debug("Fila offline sera sincronizada mais tarde.");
+      }
+    };
+    bootstrap();
+    return () => {
+      mounted = false;
+    };
+  }, [handleSyncOfflinePoints, refreshQueuedCount]);
 
   const capturePoint = async () => {
     if (!ensureAuthenticated()) {
@@ -48,13 +162,11 @@ export const usePointRegistration = () => {
         timeInterval: 10000,
       });
 
-      const newPointData: PointData = {
+      setPointData({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         timestamp: new Date().toISOString(),
-      };
-
-      setPointData(newPointData);
+      });
     } catch (err) {
       console.error("Erro ao capturar localizacao:", err);
       setError("Nao foi possivel obter a sua localizacao. Verifique o GPS.");
@@ -72,87 +184,56 @@ export const usePointRegistration = () => {
       return;
     }
 
+    const authState = useAuthStore.getState();
+    const rawId = authState.user?.id ?? authState.user?.matricula ?? null;
+    const idAluno = rawId != null ? Number(rawId) : NaN;
+    if (!Number.isFinite(idAluno)) {
+      setError("Identificador do aluno ausente ou invalido (matricula/id).");
+      return;
+    }
+
+    const payload = {
+      id_aluno: idAluno,
+      latitude_atual: pointData.latitude,
+      longitude_atual: pointData.longitude,
+    };
+
+    const api = getApiClient();
+    const endpoints = getEndpoints();
+
     setLoading(true);
     setError(null);
 
     try {
-      const api = getApiClient();
-      const endpoints = getEndpoints();
-      const authState = useAuthStore.getState();
-      const rawId = authState.user?.id ?? authState.user?.matricula ?? null;
-      const idAluno = rawId != null ? parseInt(String(rawId), 10) : NaN;
-
-      if (!Number.isFinite(idAluno)) {
-        throw new Error("Identificador do aluno ausente ou invalido (matricula/id).");
-      }
-
-      const payload = {
-        id_aluno: idAluno,
-        latitude_atual: pointData.latitude,
-        longitude_atual: pointData.longitude,
-      };
-
-      // Passo 1: verificar localizacao antes de registrar
       try {
         await api.post(endpoints.verificarLocalizacao, payload);
-      } catch (verr: any) {
-        let vMsg = "Nao foi possivel verificar sua localizacao.";
-        if (verr?.code === "ERR_NETWORK" || verr?.message === "Network Error") {
-          vMsg =
-            "Falha de comunicacao com o servidor. Se estiver no navegador, atualize a pagina e tente novamente.";
-        } else if (verr?.response?.status === 422) {
-          const detail = verr?.response?.data?.detail;
-          if (typeof detail === "string") {
-            vMsg = detail;
-          } else if (Array.isArray(detail)) {
-            vMsg =
-              detail
-                .map((d: any) => d?.msg)
-                .filter(Boolean)
-                .join("; ") || vMsg;
-          }
-        } else if (verr?.response?.data?.detail) {
-          vMsg = verr.response.data.detail;
+      } catch (verr) {
+        if (isNetworkError(verr)) {
+          await storeOfflinePoint(idAluno, pointData);
+          return;
         }
-        setError(`Falha na verificacao de localizacao: ${vMsg}`);
-        return; // nao prosseguir para o registro
-      }
-
-      // Passo 2: registrar ponto
-      const response = await api.post(endpoints.registro, payload);
-
-      if (response.status === 201 || response.status === 200) {
-        Alert.alert(
-          "Sucesso",
-          "Ponto registrado! O backend esta validando sua localizacao."
+        const message = extractApiMessage(
+          verr,
+          "Nao foi possivel verificar sua localizacao."
         );
-        setPointData(null);
-      }
-    } catch (err: any) {
-      console.error("Erro ao registrar ponto:", err);
-      let errorMessage = "Erro ao comunicar com o servidor.";
-
-      if (err?.code === "ERR_NETWORK" || err?.message === "Network Error") {
-        errorMessage =
-          "Falha de comunicacao com o servidor. Se estiver no navegador, atualize a pagina e tente novamente.";
-      } else if (err?.response?.status === 422) {
-        const detail = err?.response?.data?.detail;
-        if (typeof detail === "string") {
-          errorMessage = detail;
-        } else if (Array.isArray(detail)) {
-          errorMessage =
-            detail
-              .map((d: any) => d?.msg)
-              .filter(Boolean)
-              .join("; ") || "Requisicao invalida.";
-        } else {
-          errorMessage = "Requisicao invalida.";
-        }
-      } else if (err?.response?.data?.detail) {
-        errorMessage = err.response.data.detail;
+        setError(`Falha na verificacao de localizacao: ${message}`);
+        return;
       }
 
-      setError(`Falha no registro: ${errorMessage}`);
+      await api.post(endpoints.registro, payload);
+      setPointData(null);
+      Alert.alert("Ponto registrado", "Registro enviado com sucesso.");
+      refreshQueuedCount();
+      handleSyncOfflinePoints(false).catch(() => {
+        console.debug("Fila offline sera sincronizada depois.");
+      });
+    } catch (err) {
+      if (isNetworkError(err)) {
+        await storeOfflinePoint(idAluno, pointData);
+        return;
+      }
+      const message = extractApiMessage(err, "Requisicao invalida.");
+      setError(`Falha no registro: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -167,6 +248,9 @@ export const usePointRegistration = () => {
     capturePoint,
     confirmPointRegistration,
     cancelConfirmation,
+    queuedCount,
+    syncingQueue,
+    syncOfflinePoints: () => handleSyncOfflinePoints(true),
   };
 };
 
