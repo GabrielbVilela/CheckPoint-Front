@@ -14,7 +14,7 @@ export const getEnvConfig = (): EnvConfig => {
     | string
     | undefined = process.env.EXPO_PUBLIC_API_URL ?? (expoExtra.EXPO_PUBLIC_API_URL as string | undefined);
 
-  const apiUrl = envApiUrl ?? "https://backend-expo-681689392736.us-central1.run.app";
+  const apiUrl = envApiUrl ?? "https://apps-back-checkpoint.uagslr.easypanel.host";
 
   if (!envApiUrl) {
     console.warn("[env] EXPO_PUBLIC_API_URL nao foi definido; usando fallback:", apiUrl);
