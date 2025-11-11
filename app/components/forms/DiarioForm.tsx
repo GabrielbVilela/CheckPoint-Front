@@ -1,9 +1,13 @@
+import { formatDateInput } from "@/features/cadastro/formatters";
 import { DiarioPayload } from "@/services/diarios";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,11 +30,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
+  scrollWrapper: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    width: "100%",
+  },
   container: {
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 20,
-    width: "90%",
+    width: "100%",
+    maxWidth: 480,
   },
   title: {
     color: "#111",
@@ -123,6 +134,24 @@ const styles = StyleSheet.create({
   },
 });
 
+const convertBrDateToIso = (value: string): string | null => {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length !== 8) {
+    return null;
+  }
+  const day = Number(digits.slice(0, 2));
+  const month = Number(digits.slice(2, 4));
+  const year = Number(digits.slice(4));
+  if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900) {
+    return null;
+  }
+  const iso = `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day
+    .toString()
+    .padStart(2, "0")}`;
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? null : iso;
+};
+
 const DiarioForm: React.FC<Props> = ({ visible, contratos, onSubmit, onCancel }) => {
   const [contratoId, setContratoId] = useState<number | null>(contratos[0]?.id ?? null);
   const [dataReferencia, setDataReferencia] = useState("");
@@ -175,8 +204,10 @@ const DiarioForm: React.FC<Props> = ({ visible, contratos, onSubmit, onCancel })
       Alert.alert("Campos obrigatorios", "Informe um resumo.");
       return;
     }
-    if (!dataReferencia.trim()) {
-      Alert.alert("Campos obrigatorios", "Informe a data de referencia (AAAA-MM-DD).");
+
+    const isoDate = convertBrDateToIso(dataReferencia);
+    if (!isoDate) {
+      Alert.alert("Data invalida", "Informe a data no formato DD/MM/AAAA.");
       return;
     }
 
@@ -184,7 +215,7 @@ const DiarioForm: React.FC<Props> = ({ visible, contratos, onSubmit, onCancel })
     try {
       await onSubmit({
         id_contrato: contratoId,
-        data_referencia: dataReferencia.trim(),
+        data_referencia: isoDate,
         resumo: resumo.trim(),
         detalhes: detalhes.trim() || undefined,
         anexo_url: anexoUrl.trim() || undefined,
@@ -220,7 +251,12 @@ const DiarioForm: React.FC<Props> = ({ visible, contratos, onSubmit, onCancel })
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
 
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={80}
+      >
+        <ScrollView contentContainerStyle={styles.scrollWrapper} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           <Text style={styles.title}>Registro de diario</Text>
 
@@ -233,9 +269,9 @@ const DiarioForm: React.FC<Props> = ({ visible, contratos, onSubmit, onCancel })
           <Text style={styles.label}>Data de referencia</Text>
           <TextInput
             style={styles.input}
-            placeholder="AAAA-MM-DD"
+            placeholder="DD/MM/AAAA"
             value={dataReferencia}
-            onChangeText={setDataReferencia}
+            onChangeText={(value) => setDataReferencia(formatDateInput(value))}
           />
 
           <Text style={styles.label}>Resumo</Text>
@@ -281,8 +317,9 @@ const DiarioForm: React.FC<Props> = ({ visible, contratos, onSubmit, onCancel })
               )}
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <Modal transparent animationType="fade" visible={pickerVisible} onRequestClose={() => setPickerVisible(false)}>
         <TouchableWithoutFeedback onPress={() => setPickerVisible(false)}>

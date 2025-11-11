@@ -41,6 +41,28 @@ export type TimelineAvaliacao = {
   criado_em: string;
 };
 
+export type TimelineContrato = {
+  id: number;
+  status: boolean;
+  data_inicio?: string | null;
+  data_final?: string | null;
+  hora_inicio_prevista?: string | null;
+  hora_fim_prevista?: string | null;
+  tolerancia_minutos?: number | null;
+  raio_permitido_metros?: number | null;
+  turma?: { nome?: string; turno?: string | null };
+  convenio?: {
+    id?: number;
+    curso?: { nome?: string };
+    empresa?: { nome_fantasia?: string; razao_social?: string };
+  };
+  supervisor_externo?: {
+    id?: number;
+    nome?: string;
+    empresa?: { nome_fantasia?: string; razao_social?: string };
+  };
+};
+
 export type TimelineResponse = {
   data: string;
   total_minutos: number;
@@ -50,6 +72,7 @@ export type TimelineResponse = {
   justificativas: TimelineJustificativa[];
   diarios: TimelineDiario[];
   avaliacoes: TimelineAvaliacao[];
+  contratos: TimelineContrato[];
 };
 
 export const useTimeline = (dateIso?: string) => {
@@ -69,17 +92,35 @@ export const useTimeline = (dateIso?: string) => {
           params: dateParam ? { data: dateParam } : undefined,
         });
         setTimeline(response.data);
-        const contractEntries = new Map<number, string>();
-        const pushContract = (id?: number | null) => {
-          if (typeof id === "number") {
-            contractEntries.set(id, `Contrato ${id}`);
+        const describeContract = (contract: TimelineContrato) => {
+          const segments: string[] = [];
+          if (contract.turma?.nome) {
+            segments.push(contract.turma.turno ? `${contract.turma.nome} • ${contract.turma.turno}` : contract.turma.nome);
           }
+          if (contract.convenio) {
+            const empresa = contract.convenio.empresa?.nome_fantasia ?? contract.convenio.empresa?.razao_social;
+            if (empresa) {
+              segments.push(empresa);
+            }
+            if (contract.convenio.curso?.nome) {
+              segments.push(contract.convenio.curso.nome);
+            }
+          }
+          if (!segments.length) {
+            return `Contrato ${contract.id}`;
+          }
+          return segments.join(" • ");
         };
-        response.data.pontos.forEach((p) => pushContract(p.id_contrato));
-        response.data.justificativas.forEach((j) => pushContract(j.id_contrato));
-        response.data.diarios.forEach((d) => pushContract(d.id_contrato));
-        response.data.avaliacoes.forEach((a) => pushContract(a.id_contrato));
-        setContracts(Array.from(contractEntries.entries()).map(([id, label]) => ({ id, label })));
+        const contractEntries = new Map<number, string>();
+        response.data.contratos.forEach((contract) => {
+          contractEntries.set(contract.id, describeContract(contract));
+        });
+        setContracts(
+          Array.from(contractEntries.entries()).map(([id, label]) => ({
+            id,
+            label,
+          }))
+        );
       } catch (err: any) {
         console.error("Erro ao carregar timeline:", err);
         setError(

@@ -30,7 +30,12 @@ export const createDiario = async (payload: DiarioPayload) => {
 export const listDiarios = async (params?: { status?: DiarioStatus; data_referencia?: string }) => {
   const api = getApiClient();
   const { diarios } = getEndpoints();
-  const response = await api.get<DiarioDTO[]>(diarios, { params });
+  const response = await api.get<DiarioDTO[]>(diarios, {
+    params: {
+      status_filter: params?.status,
+      data_referencia: params?.data_referencia,
+    },
+  });
   return response.data;
 };
 
