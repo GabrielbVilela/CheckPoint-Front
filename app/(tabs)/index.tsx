@@ -13,118 +13,6 @@ import {
 } from "react-native";
 import { useAuthStore } from "src/store/authStore";
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    backgroundColor: "#fff",
-    flex: 1,
-    paddingTop: 80,
-  },
-  mainTitle: {
-    color: "#000",
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 50,
-  },
-  pointCard: {
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderColor: "#ddd",
-    borderRadius: 15,
-    borderWidth: 1,
-    elevation: 3,
-    maxWidth: 350,
-    padding: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    width: "90%",
-  },
-  userInfoBox: {
-    alignItems: "flex-start",
-    borderBottomColor: "#eee",
-    borderBottomWidth: 1,
-    marginBottom: 15,
-    padding: 10,
-    width: "100%",
-  },
-  collaboratorTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  userInfoText: {
-    color: "#333",
-    fontSize: 14,
-  },
-  timeText: {
-    color: "#333",
-    fontSize: 50,
-    fontWeight: "bold",
-  },
-  dateText: {
-    color: "#666",
-    fontSize: 18,
-    marginBottom: 40,
-  },
-  mainButton: {
-    alignItems: "center",
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    marginTop: 20,
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    width: "100%",
-  },
-  mainButtonText: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  confirmationText: {
-    color: "#333",
-    fontSize: 18,
-    fontWeight: "600",
-    marginVertical: 20,
-  },
-  buttonGroup: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-    width: "100%",
-  },
-  actionButton: {
-    alignItems: "center",
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 5,
-    paddingVertical: 15,
-  },
-  cancelButton: {
-    backgroundColor: "#E53935",
-  },
-  registerButton: {
-    backgroundColor: "#4CAF50",
-  },
-  cancelButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  registerButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  errorText: {
-    color: "#E53935",
-    fontWeight: "bold",
-    marginTop: 10,
-    textAlign: "center",
-  },
-});
-
 const formatTimestamp = (isoString: string) => {
   const date = new Date(isoString);
   const time = date.toLocaleTimeString("pt-BR", {
@@ -305,3 +193,115 @@ const PointScreen = () => {
 };
 
 export default PointScreen;
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    flex: 1,
+    paddingTop: 80,
+  },
+  mainTitle: {
+    color: "#000",
+    fontSize: 32,
+    fontWeight: "bold",
+    marginBottom: 50,
+  },
+  pointCard: {
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderColor: "#ddd",
+    borderRadius: 15,
+    borderWidth: 1,
+    elevation: 3,
+    maxWidth: 350,
+    padding: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    width: "90%",
+  },
+  userInfoBox: {
+    alignItems: "flex-start",
+    borderBottomColor: "#eee",
+    borderBottomWidth: 1,
+    marginBottom: 15,
+    padding: 10,
+    width: "100%",
+  },
+  collaboratorTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  userInfoText: {
+    color: "#333",
+    fontSize: 14,
+  },
+  timeText: {
+    color: "#333",
+    fontSize: 50,
+    fontWeight: "bold",
+  },
+  dateText: {
+    color: "#666",
+    fontSize: 18,
+    marginBottom: 40,
+  },
+  mainButton: {
+    alignItems: "center",
+    backgroundColor: "#4CAF50",
+    borderRadius: 8,
+    marginTop: 20,
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    width: "100%",
+  },
+  mainButtonText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  confirmationText: {
+    color: "#333",
+    fontSize: 18,
+    fontWeight: "600",
+    marginVertical: 20,
+  },
+  buttonGroup: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+    width: "100%",
+  },
+  actionButton: {
+    alignItems: "center",
+    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 5,
+    paddingVertical: 15,
+  },
+  cancelButton: {
+    backgroundColor: "#E53935",
+  },
+  registerButton: {
+    backgroundColor: "#4CAF50",
+  },
+  cancelButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  registerButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  errorText: {
+    color: "#E53935",
+    fontWeight: "bold",
+    marginTop: 10,
+    textAlign: "center",
+  },
+});
