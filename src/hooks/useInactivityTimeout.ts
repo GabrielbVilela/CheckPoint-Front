@@ -1,7 +1,7 @@
-import { useAuthStore } from "@/store/authStore";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef } from "react";
 import { AppState } from "react-native";
+import { useAuthStore } from "src/store/authStore";
 
 const INACTIVITY_TIMEOUT = 4 * 60 * 1000;
 

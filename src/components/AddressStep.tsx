@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CadastroAlunoErrors, CadastroAlunoForm } from "../types";
+import { CadastroAlunoErrors, CadastroAlunoForm } from "../types/types";
 
 /**
  * Props do componente AddressStep

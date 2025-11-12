@@ -1,6 +1,6 @@
-import { useAuthStore } from "@/store/authStore";
 import { Slot, SplashScreen, useRouter, useSegments } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { useAuthStore } from "src/store/authStore";
 
 SplashScreen.preventAutoHideAsync();
 

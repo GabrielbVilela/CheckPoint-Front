@@ -1,9 +1,9 @@
-import { onlyDigits } from "./formatters";
 import {
   CadastroAlunoErrors,
   CadastroAlunoForm,
   CadastroAlunoStep,
-} from "./types";
+} from "../types/types";
+import { onlyDigits } from "./formatters";
 
 // Regex simples para validar formato básico de e-mail
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

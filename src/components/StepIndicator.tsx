@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import type { CadastroAlunoStep } from "../types";
+import type { CadastroAlunoStep } from "../types/types";
 
 type StepIndicatorProps = {
   activeStep: CadastroAlunoStep;

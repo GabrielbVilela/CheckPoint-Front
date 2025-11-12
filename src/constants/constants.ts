@@ -1,4 +1,4 @@
-import { PeriodoOption } from "./types";
+import { PeriodoOption } from "../types/types";
 
 /**
  * Lista de opções de período utilizada pelo PeriodoModal.

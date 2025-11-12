@@ -1,5 +1,3 @@
-import { getEndpoints } from "@/config/env";
-import { useAuthStore } from "@/store/authStore";
 import axios from "axios";
 import { router } from "expo-router";
 import { jwtDecode } from "jwt-decode";
@@ -14,6 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { getEndpoints } from "src/constants/env";
+import { useAuthStore } from "src/store/authStore";
+const logo = require("src/assets/images/logoblack.png");
 
 interface TokenPayload {
   sub: string;
@@ -129,7 +130,7 @@ const LoginScreen = () => {
   return (
     <View style={styles.container}>
       <Image
-        source={require("../../assets/images/logo/logoblack.png")}
+        source={logo}
         style={styles.logo}
       />
 

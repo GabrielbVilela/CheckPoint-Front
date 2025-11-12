@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { PERIODOS } from "../constants";
-import { PeriodoOption } from "../types";
+import { PERIODOS } from "../constants/constants";
+import { PeriodoOption } from "../types/types";
 
 /**
  * Modal que apresenta uma lista de opções de período (PERIODOS).

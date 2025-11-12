@@ -1,38 +1,3 @@
-import { getEndpoints } from "@/config/env";
-import {
-  AddressStep,
-} from "@/features/cadastro/components/AddressStep";
-import {
-  ContractStep,
-} from "@/features/cadastro/components/ContractStep";
-import {
-  PeriodoModal,
-} from "@/features/cadastro/components/PeriodoModal";
-import {
-  PersonalDataStep,
-} from "@/features/cadastro/components/PersonalDataStep";
-import {
-  StepIndicator,
-} from "@/features/cadastro/components/StepIndicator";
-import {
-  formatCep,
-  formatDateFromDate,
-  formatPhone,
-  onlyDigits,
-} from "@/features/cadastro/formatters";
-import {
-  CadastroAlunoErrors,
-  CadastroAlunoForm,
-  CadastroAlunoStep,
-  CadastroDateField,
-  PeriodoOption,
-} from "@/features/cadastro/types";
-import {
-  isEndAfterStart,
-  isValidDate,
-  validateStep,
-} from "@/features/cadastro/validation";
-import getApiClient from "@/services/api";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -43,6 +8,41 @@ import {
   Text,
   View,
 } from "react-native";
+import {
+  AddressStep,
+} from "src/components/AddressStep";
+import {
+  ContractStep,
+} from "src/components/ContractStep";
+import {
+  PeriodoModal,
+} from "src/components/PeriodoModal";
+import {
+  PersonalDataStep,
+} from "src/components/PersonalDataStep";
+import {
+  StepIndicator,
+} from "src/components/StepIndicator";
+import { getEndpoints } from "src/constants/env";
+import getApiClient from "src/services/api";
+import {
+  CadastroAlunoErrors,
+  CadastroAlunoForm,
+  CadastroAlunoStep,
+  CadastroDateField,
+  PeriodoOption,
+} from "src/types/types";
+import {
+  formatCep,
+  formatDateFromDate,
+  formatPhone,
+  onlyDigits,
+} from "src/utils/formatters";
+import {
+  isEndAfterStart,
+  isValidDate,
+  validateStep,
+} from "src/utils/validation";
 
 const INITIAL_FORM: CadastroAlunoForm = {
   nome: "",

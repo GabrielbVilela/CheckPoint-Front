@@ -1,6 +1,6 @@
-import { getEnvConfig } from "@/config/env";
-import { useAuthStore } from "@/store/authStore";
 import axios, { AxiosInstance } from "axios";
+import { getEnvConfig } from "src/constants/env";
+import { useAuthStore } from "src/store/authStore";
 
 /**
  * Cria um cliente Axios configurado em runtime. Evita usar valores avaliados

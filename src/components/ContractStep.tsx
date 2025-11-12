@@ -11,7 +11,7 @@ import {
   CadastroAlunoErrors,
   CadastroAlunoForm,
   CadastroDateField,
-} from "../types";
+} from "../types/types";
 
 /**
  * ContractStep: step responsável por capturar datas de inicio e término do contrato.

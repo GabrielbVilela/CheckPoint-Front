@@ -1,6 +1,5 @@
-import { useInactivityTimeout } from "@/hooks/useInactivityTimeout";
-import { usePointRegistration } from "@/hooks/usePointRegistration";
-import { useAuthStore } from "@/store/authStore";
+import { useInactivityTimeout } from "src/hooks/useInactivityTimeout";
+import { usePointRegistration } from "src/hooks/usePointRegistration";
 import { useRouter } from "expo-router";
 import "expo-router/entry";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -12,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useAuthStore } from "src/store/authStore";
 
 const styles = StyleSheet.create({
   container: {

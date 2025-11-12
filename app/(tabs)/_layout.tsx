@@ -1,6 +1,6 @@
-import { useAuthStore } from "@/store/authStore";
 import { Redirect, Stack, useSegments } from "expo-router";
 import React from "react";
+import { useAuthStore } from "src/store/authStore";
 
 const TabsLayout = () => {
   const userRole = useAuthStore((state) => state.userRole);
