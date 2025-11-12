@@ -1,0 +1,12 @@
+/
+/alunos/{id_aluno}/historico-ponto
+/contratos
+/enderecos
+/login
+/me
+/ponto/entrada
+/ponto/saida
+/ponto/verificar-localizacao
+/utilizadores
+/utilizadores/criar
+
