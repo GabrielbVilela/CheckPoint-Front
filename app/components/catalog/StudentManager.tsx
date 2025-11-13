@@ -1,16 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
+  Modal,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
 import StudentWizardModal from "@/components/catalog/StudentWizardModal";
 import useAlunosCatalog from "@/hooks/useAlunosCatalog";
+import { AlunoResumo, deleteAluno, updateAluno } from "@/services/alunos";
 
 const styles = StyleSheet.create({
   container: {
@@ -98,12 +102,80 @@ const styles = StyleSheet.create({
     color: "#d32f2f",
     marginTop: 12,
   },
+  rowActions: {
+    flexDirection: "row",
+    marginTop: 6,
+  },
+  smallButton: {
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  secondaryButton: {
+    backgroundColor: "#2563EB",
+  },
+  rejectButton: {
+    backgroundColor: "#E53935",
+    marginLeft: 8,
+  },
+  smallButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  editOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  editCard: {
+    width: "100%",
+    maxWidth: 480,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+  },
+  editTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+  editInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  editActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  cancelButton: {
+    backgroundColor: "#f2f2f2",
+  },
+  submitButton: {
+    backgroundColor: "#2563EB",
+  },
 });
 
 const StudentManager = () => {
   const [wizardVisible, setWizardVisible] = useState(false);
   const [search, setSearch] = useState("");
   const { alunos, loading, error, load, refresh } = useAlunosCatalog();
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingAluno, setEditingAluno] = useState<AlunoResumo | null>(null);
+  const [editForm, setEditForm] = useState({
+    nome: "",
+    email: "",
+    celular: "",
+    turma: "",
+    periodo: "",
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [removingId, setRemovingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!search.trim()) {
@@ -114,6 +186,59 @@ const StudentManager = () => {
     }, 400);
     return () => clearTimeout(handler);
   }, [load, search]);
+
+  const handleEditSubmit = async () => {
+    if (!editingAluno) {
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await updateAluno(editingAluno.id, {
+        nome: editForm.nome.trim() || undefined,
+        email: editForm.email.trim() || undefined,
+        contato: editForm.celular.trim() || undefined,
+        turma: editForm.turma.trim() || undefined,
+        periodo: editForm.periodo.trim() || undefined,
+      });
+      refresh();
+      setEditModalVisible(false);
+      setEditingAluno(null);
+    } catch (err: any) {
+      console.error("Falha ao atualizar aluno:", err);
+      const detail = err?.response?.data?.detail ?? "Nao foi possivel atualizar o aluno.";
+      Alert.alert("Erro", detail);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleRemoveAluno = (aluno: AlunoResumo) => {
+    Alert.alert(
+      "Excluir aluno",
+      `Tem certeza que deseja remover ${aluno.nome}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            setRemovingId(aluno.id);
+            try {
+              await deleteAluno(aluno.id);
+              refresh();
+            } catch (err: any) {
+              console.error("Falha ao remover aluno:", err);
+              const detail = err?.response?.data?.detail ?? "Nao foi possivel remover o aluno.";
+              Alert.alert("Erro", detail);
+            } finally {
+              setRemovingId(null);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   const listData = useMemo(() => alunos.slice(0, 50), [alunos]);
 
@@ -171,6 +296,35 @@ const StudentManager = () => {
                 <Text style={styles.itemMeta}>
                   Matricula {item.matricula} - Turma {item.turma ?? "-"} - Email {item.email}
                 </Text>
+                <View style={styles.rowActions}>
+                  <TouchableOpacity
+                    style={[styles.smallButton, styles.secondaryButton]}
+                    onPress={() => {
+                      setEditingAluno(item);
+                      setEditForm({
+                        nome: item.nome,
+                        email: item.email,
+                        celular: item.celular ?? "",
+                        turma: item.turma ?? "",
+                        periodo: item.periodo ?? "",
+                      });
+                      setEditModalVisible(true);
+                    }}
+                  >
+                    <Text style={styles.smallButtonText}>Editar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.smallButton, styles.rejectButton]}
+                    onPress={() => handleRemoveAluno(item)}
+                    disabled={removingId === item.id}
+                  >
+                    {removingId === item.id ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.smallButtonText}>Excluir</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
             refreshing={loading}
@@ -187,6 +341,69 @@ const StudentManager = () => {
           refresh();
         }}
       />
+
+      <Modal transparent animationType="fade" visible={editModalVisible} onRequestClose={() => setEditModalVisible(false)}>
+        <TouchableWithoutFeedback onPress={() => setEditModalVisible(false)}>
+          <View style={styles.editOverlay} />
+        </TouchableWithoutFeedback>
+        <View style={styles.editOverlay}>
+          <View style={styles.editCard}>
+            <Text style={styles.editTitle}>Editar aluno</Text>
+            <TextInput
+              style={styles.editInput}
+              placeholder="Nome"
+              value={editForm.nome}
+              onChangeText={(value) => setEditForm((prev) => ({ ...prev, nome: value }))}
+            />
+            <TextInput
+              style={styles.editInput}
+              placeholder="Email"
+              value={editForm.email}
+              onChangeText={(value) => setEditForm((prev) => ({ ...prev, email: value }))}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            <TextInput
+              style={styles.editInput}
+              placeholder="Celular"
+              value={editForm.celular}
+              onChangeText={(value) => setEditForm((prev) => ({ ...prev, celular: value }))}
+              keyboardType="phone-pad"
+            />
+            <TextInput
+              style={styles.editInput}
+              placeholder="Turma"
+              value={editForm.turma}
+              onChangeText={(value) => setEditForm((prev) => ({ ...prev, turma: value }))}
+            />
+            <TextInput
+              style={styles.editInput}
+              placeholder="Periodo"
+              value={editForm.periodo}
+              onChangeText={(value) => setEditForm((prev) => ({ ...prev, periodo: value }))}
+            />
+            <View style={styles.editActions}>
+              <TouchableOpacity
+                style={[styles.smallButton, styles.cancelButton]}
+                onPress={() => {
+                  setEditModalVisible(false);
+                  setEditingAluno(null);
+                }}
+                disabled={savingEdit}
+              >
+                <Text style={styles.smallButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.smallButton, styles.submitButton]}
+                onPress={handleEditSubmit}
+                disabled={savingEdit}
+              >
+                {savingEdit ? <ActivityIndicator color="#fff" /> : <Text style={styles.smallButtonText}>Salvar</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 };

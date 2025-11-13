@@ -1,18 +1,37 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { createDocumento, deleteDocumento, DocumentoDTO, DocumentoPayload, listDocumentos, updateDocumento } from "@/services/documentos";
+import {
+  createDocumento,
+  deleteDocumento,
+  DocumentoDTO,
+  DocumentoFilterParams,
+  DocumentoPayload,
+  listDocumentos,
+  updateDocumento,
+} from "@/services/documentos";
 
-export const useDocumentos = (contratoId?: number) => {
+export const useDocumentos = (filters?: DocumentoFilterParams) => {
   const [documentos, setDocumentos] = useState<DocumentoDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const payload = useMemo(() => {
+    if (!filters) {
+      return undefined;
+    }
+    const entries = Object.entries(filters).filter(([, value]) => value !== undefined && value !== null && value !== "");
+    if (entries.length === 0) {
+      return undefined;
+    }
+    return Object.fromEntries(entries) as DocumentoFilterParams;
+  }, [filters]);
+
   const fetchDocumentos = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await listDocumentos(contratoId ? { contrato_id: contratoId } : undefined);
+      const data = await listDocumentos(payload);
       setDocumentos(data);
     } catch (err: any) {
       console.error("Erro ao carregar documentos:", err);
@@ -21,18 +40,18 @@ export const useDocumentos = (contratoId?: number) => {
     } finally {
       setLoading(false);
     }
-  }, [contratoId]);
+  }, [payload]);
 
   useEffect(() => {
     fetchDocumentos();
   }, [fetchDocumentos]);
 
   const handleCreate = useCallback(
-    async (payload: DocumentoPayload) => {
+    async (payloadCreate: DocumentoPayload) => {
       setSubmitting(true);
       setError(null);
       try {
-        await createDocumento(payload);
+        await createDocumento(payloadCreate);
         await fetchDocumentos();
       } catch (err: any) {
         console.error("Erro ao criar documento:", err);
@@ -47,11 +66,11 @@ export const useDocumentos = (contratoId?: number) => {
   );
 
   const handleUpdate = useCallback(
-    async (id: number, payload: Partial<DocumentoPayload> & { status?: string }) => {
+    async (id: number, payloadUpdate: Partial<DocumentoPayload> & { status?: string }) => {
       setSubmitting(true);
       setError(null);
       try {
-        await updateDocumento(id, payload);
+        await updateDocumento(id, payloadUpdate);
         await fetchDocumentos();
       } catch (err: any) {
         console.error("Erro ao atualizar documento:", err);

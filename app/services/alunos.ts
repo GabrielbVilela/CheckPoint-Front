@@ -55,6 +55,29 @@ export const fetchAlunos = async (params?: { search?: string; limit?: number }) 
   return response.data;
 };
 
+export type AlunoUpdatePayload = {
+  nome?: string;
+  matricula?: string;
+  senha?: string;
+  contato?: string;
+  email?: string;
+  turma?: string;
+  periodo?: string;
+};
+
+export const updateAluno = async (id: number, payload: AlunoUpdatePayload) => {
+  const api = getApiClient();
+  const { alunos } = getEndpoints();
+  const response = await api.patch<AlunoResumo>(`${alunos}/${id}`, payload);
+  return response.data;
+};
+
+export const deleteAluno = async (id: number) => {
+  const api = getApiClient();
+  const { alunos } = getEndpoints();
+  await api.delete(`${alunos}/${id}`);
+};
+
 export const importAlunos = async (registros: AlunoImportPayload[]) => {
   const api = getApiClient();
   const { alunos } = getEndpoints();

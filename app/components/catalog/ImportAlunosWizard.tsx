@@ -6,13 +6,12 @@ import {
   Modal,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 
 import { AlunoImportPayload, importAlunos } from "@/services/alunos";
 
@@ -131,6 +130,7 @@ const ImportAlunosWizard = () => {
 
   const handlePickCsv = async () => {
     setError(null);
+    setLoading(true);
     try {
       const res = await DocumentPicker.getDocumentAsync({ type: "text/csv", copyToCacheDirectory: true });
       if (res.canceled || !res.assets || res.assets.length === 0) {
@@ -141,6 +141,8 @@ const ImportAlunosWizard = () => {
     } catch (err) {
       console.error("CSV error:", err);
       setError("Não foi possível ler o arquivo CSV.");
+    } finally {
+      setLoading(false);
     }
   };
 
